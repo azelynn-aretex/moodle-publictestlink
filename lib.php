@@ -7,5 +7,5 @@
  */
 
 function local_publictestlink_before_footer() {
-    \core\notification::add('Hello World!', \core\output\notification::NOTIFY_SUCCESS);
+    \core\notification::add('Hello Lucky!', \core\output\notification::NOTIFY_SUCCESS);
 }
