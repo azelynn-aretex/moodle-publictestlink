@@ -22,21 +22,18 @@ class hook_callbacks {
         if (isset($CFG->local_publictestlink_hide_ui) && $CFG->local_publictestlink_hide_ui === false) {
             $enabled = false;
         }
-        // Backwards compatible global variable fallback: allow disabling via global var.
-        if (!empty($GLOBALS['local_publictestlink_hide_ui']) && $GLOBALS['local_publictestlink_hide_ui'] === false) {
-            $enabled = false;
-        }
 
         if (empty($enabled)) {
             return;
         }
 
-        if (!function_exists('isloggedin') || !function_exists('isguestuser')) {
+        if (!function_exists('isloggedin')) {
             return;
         }
 
-        // Only apply for guests or not-logged-in users ("non-users").
-        if (isloggedin() && !isguestuser()) {
+        // Only apply for not-logged-in users ("non-users").
+        // Guests and logged-in users will see the UI.
+        if (isloggedin()) {
             return;
         }
 

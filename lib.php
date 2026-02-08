@@ -7,7 +7,7 @@
  */
 
 // Toggle: set to true to hide navbar and sidebar for guests/non-users.
-$local_publictestlink_hide_ui = true;
+$local_publictestlink_hide_ui = false;
 
 function local_publictestlink_before_footer() {
 	global $local_publictestlink_hide_ui;
@@ -16,12 +16,12 @@ function local_publictestlink_before_footer() {
 		return;
 	}
 
-	if (!function_exists('isloggedin') || !function_exists('isguestuser')) {
-		return;
-	}
+	// if (!function_exists('isloggedin') || !function_exists('isguestuser')) {
+	// 	return;
+	// }
 
-	// Only apply for guests or not-logged-in users ("non-users").
-	if (isloggedin() && !isguestuser()) {
+	// Only apply for not-logged-in users ("non-users").
+	if (!$local_publictestlink_hide_ui) {
 		return;
 	}
 
