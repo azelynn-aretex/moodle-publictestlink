@@ -14,7 +14,7 @@ $PAGE->set_url('/local/publictestlink/landing.php');
 $PAGE->set_context(context_system::instance());
 
 $PAGE->set_title('Login');
-$PAGE->set_heading('Login as shadow user');
+$PAGE->set_heading('Login as non-user');
 $PAGE->set_pagelayout('standard');
 
 $PAGE->add_body_class('landing-body');
