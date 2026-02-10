@@ -9,7 +9,6 @@ require_once('../forms/non_user_login.php');
 
 use core\exception\moodle_exception;
 use core\url as moodle_url;
-use mod_quiz\quiz_settings;
 
 // function normalize_email(string $email): string {
 //     return core_text::strtolower(trim($email));
