@@ -6,6 +6,7 @@ require_once('../classes/session.php');
 
 use core\url as moodle_url;
 use core\notification;
+use core\output\html_writer;
 
 // TODO check if attempt is completed
 
@@ -39,8 +40,8 @@ $quba->set_preferred_behaviour($quiz->preferredbehaviour);
 
 $PAGE->set_url($PLUGIN_URL . '/local/publictestlink/review.php', ['attemptid' => $attemptid]);
 $PAGE->set_pagelayout('standard');
-$PAGE->set_title(get_string('review'));
-$PAGE->set_heading(get_string('review'));
+$PAGE->set_title('Review');
+$PAGE->set_heading('The results are in!');
 
 $displayoptions = new question_display_options();
 $displayoptions->readonly = true;
@@ -56,5 +57,13 @@ echo $OUTPUT->header();
 foreach ($quba->get_slots() as $slot) {
     echo $quba->render_question($slot, $displayoptions);
 }
+
+echo html_writer::div(
+    html_writer::link(
+        new moodle_url($PLUGIN_URL . '/exit.php'),
+        'Exit and finish review',
+        ['class' => 'btn btn-danger']
+    )
+);
 
 echo $OUTPUT->footer();
