@@ -14,8 +14,8 @@ require_once('../classes/access_manager.php');
 require_once('../classes/session.php');
 
 use core\url as moodle_url;
-use core\exception\moodle_exception;
 use core\notification;
+use core\exception\moodle_exception;
 use mod_quiz\quiz_settings;
 
 // Page parameters
@@ -30,95 +30,52 @@ if ($session == null) {
     return;
 }
 
-echo $session->get_user()->get_email();
+$cm = get_coursemodule_from_id('quiz', $cmid, 0, false, MUST_EXIST);
+$quiz = $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST);
+$context = context_module::instance($cm->id);
 
-// // Create the quiz object from the course module ID.
-// $quizobj = quiz_settings::create_for_cmid($cmid, null);
+$quba = question_engine::make_questions_usage_by_activity(
+    $MODULE,
+    context_module::instance($cmid)
+);
+$quba->set_preferred_behaviour($quiz->preferredbehaviour);
 
-// // Navigation buttons in the browser should cause a reload.
-// $PAGE->set_cacheable(false);
+$quizobj = quiz_settings::create($cm->instance, $USER->id);
+$structure = $quizobj->get_structure();
 
-// $PAGE->set_heading($quizobj->get_course()->fullname);
+foreach ($structure->get_slots() as $slot) {
+    $question = question_bank::load_question(
+        $slot->questionid,
+        $quiz->shuffleanswers
+    );
 
-// // If no questions, throw.
-// if (!$quizobj->has_questions()) {
-//     if ($quizobj->has_capability('mod/quiz:manage')) {
-//         redirect($quizobj->edit_url());
-//     } else {
-//         throw new moodle_exception('cannotstartnoquestions', $MODULE, new moodle_url($PLUGIN_URL + '/landing.php'));
-//     }
-// }
+    $quba->add_question($question, $slot->maxmark);
+}
 
-// $attempt = publictestlink_attempt::get_or_create($quizobj->get_quiz()->id, )
+$quba->start_all_questions();
 
-// // Validate access rules.
-// $timenow = time();
-// $accessmanager = new publictestlink_access_manager($quizobj, null, $timenow);
+$attempt = publictestlink_attempt::get_or_create(
+    $quiz->id,
+    $session->get_user()->get_id(),
+    $quba
+);
 
-// $accessprevents = $accessmanager->prevent_access();
-// if (!empty($accessprevents)) {
-//     $output = $PAGE->get_renderer('mod_quiz');
-//     throw new moodle_exception(
-//         'attempterror',
-//         $MODULE,
-//         new moodle_url($PLUGIN_URL + '/landing.php'),
-//         $output->access_messages($messages)
-//     );
-// }
+$timenow = time();
+$accessmanager = new publictestlink_access_manager($quizobj, $attempt, $timenow);
+$accessprevents = $accessmanager->prevent_access();
+if (!empty($accessprevents)) {
+    $output = $PAGE->get_renderer('mod_quiz');
+    throw new moodle_exception(
+        'attempterror',
+        $MODULE,
+        new moodle_url($PLUGIN_URL + '/landing.php', ['cmid' => $cmid]),
+        $output->access_messages($accessprevents)
+    );
+}
 
-// use core\exception\moodle_exception;
-// use mod_quiz\quiz_settings;
-
-// function quiz_prepare (quiz_settings $quizobj, )
-
-
-// function quiz_start_new_attempt(quiz_settings $quizobj, question_usage_by_activity $quba, $attempt) {
-//     $qubaids = new \mod_quiz\question\qubaids_for_users_attempts($quizobj->get_quizid(), $attempt->userid);
-//     $quizobj->preload_questions();
-
-//     $randomfound = false;
-//     $slot = 0;
-//     $questions = [];
-//     $maxmark = [];
-//     $page = [];
-//     foreach ($quizobj->get_questions(null, false) as $questiondata) {
-//         $slot += 1;
-//         $maxmark[$slot] = $questiondata->maxmark;
-//         $page[$slot] = $questiondata->page;
-//         if ($questiondata->status == \core_question\local\bank\question_version_status::QUESTION_STATUS_DRAFT) {
-//             throw new moodle_exception('questiondraftonly', 'mod_quiz', '', $questiondata->name);
-//         }
-//         if ($questiondata->qtype == 'random') {
-//             $randomfound = true;
-//             continue;
-//         }
-//         $questions[$slot] = question_bank::load_question($questiondata->questionid, $quizobj->get_quiz()->shuffleanswers);
-//     }
-// }
-
-// // From quiz ID
-// $quizid = required_param('quizid', PARAM_INT);
-// $quiz = $DB->get_record('quiz', ['id' => $quizid], '*');
-
-// $cm = get_coursemodule_from_instance('quiz', $quiz->id);
-
-// // Create Question Usage By Activity
-// $quba = question_engine::make_questions_usage_by_activity(
-//     'local_publictestlink',
-//     context_module::instance($cm->id)
-// );
-// $quba->set_preferred_behaviour('deferredfeedback');
-
-// // Slot then question Loading
-// $quizobj = quiz_settings::create($quiz->id);
-
-// foreach ($quizobj->get_questions() as $question) {
-//     $quba->add_question(
-//         $question,
-//         $slot->maxmark
-//     );
-// }
-
-// $quba->start_all_questions();
-// question_engine::save_questions_usage_by_activity($quba);
-
+redirect(
+    new moodle_url($PLUGIN_URL . '/attempt.php', [
+        'attemptid' => $attempt->get_id(),
+        'cmid' => $cmid,
+    ])
+);
