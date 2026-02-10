@@ -10,20 +10,7 @@ require_once('../forms/non_user_login.php');
 use core\exception\moodle_exception;
 use core\url as moodle_url;
 
-// function normalize_email(string $email): string {
-//     return core_text::strtolower(trim($email));
-// }
-
-// function login_shadow_user(string $email, string $firstname, string $lastname): bool {
-//     $email = normalize_email($email);
-//     $firstname = trim($firstname);
-//     $lastname  = trim($lastname);
-
-//     if (empty($email)) {
-//         throw new \core\exception\moodle_exception('invalidemail');
-//     }
-
-// }
+// TODO return if quiz is not public
 $cmid = required_param('cmid', PARAM_INT);
 echo $cmid;
 $cm = get_coursemodule_from_id(
