@@ -1,16 +1,39 @@
 <?php
-require_once('../../config.php');
+require_once('../../../config.php');
 require_once($CFG->libdir . '/questionlib.php');
+require_once('../classes/attempt.php');
+require_once('../classes/session.php');
+
+use core\url as moodle_url;
+use core\output\html_writer;
+use core\notification;
+
 
 $cmid = required_param('cmid', PARAM_INT);
 $attemptid = required_param('attemptid', PARAM_INT);
 
-$PAGE->set_context(context_module::instance($cmid));
-$PAGE->set_url('/local/publictestlink/pages/attempt.php', ['id' => $attemptid]);
-$PAGE->set_pagelayout('standard');
+$session = publictestlink_session::check_session();
+if ($session == null) {
+    redirect(
+        new moodle_url($PLUGIN_URL . '/landing.php', ['cmid' => $cmid]),
+        'You are not logged in.', null, notification::ERROR
+    );
+    return;
+}
 
-$qubaid = required_param('qubaid', PARAM_INT);
-$quba = question_engine::load_questions_usage_by_activity($qubaid);
+$cm = get_coursemodule_from_id('quiz', $cmid, 0, false, MUST_EXIST);
+$quiz = $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST);
+$context = context_module::instance($cm->id);
+
+$attempt = publictestlink_attempt::from_id($attemptid);
+$quba = $attempt->get_quba();
+$quba->set_preferred_behaviour($quiz->preferredbehaviour);
+
+$PAGE->requires->css('/local/publictestlink/styles.css');
+$PAGE->add_body_class('landing-body');
+$PAGE->set_url($PLUGIN_URL . '/attempt.php', ['id' => $attemptid]);
+$PAGE->set_pagelayout('standard');
+$PAGE->set_heading($quiz->name);
 
 $displayoptions = new question_display_options();
 $displayoptions->marks = question_display_options::MARK_AND_MAX;
@@ -21,11 +44,29 @@ $displayoptions->readonly = false;
 $displayoptions->flags = question_display_options::VISIBLE;
 
 
-$renderer = $PAGE->get_renderer('core_question');
+
+echo $OUTPUT->header();
+
+echo html_writer::start_tag('form', [
+    'method' => 'post',
+    'action' => new moodle_url('/local/publictestlink/pages/process.php', [
+        'attemptid' => $attemptid,
+        'cmid' => $cmid,
+    ]),
+]);
+
+$questionrenderer = $PAGE->get_renderer('core_question');
+
 foreach ($quba->get_slots() as $slot) {
-    echo question_engine::render_question(
-        $quba->get_question_attempt($slot),
-        $displayoptions,
-        $PAGE
-    );
+    echo $quba->render_question($slot, $displayoptions);
 }
+
+echo html_writer::empty_tag('input', [
+    'type'  => 'submit',
+    'name'  => 'finishattempt',
+    'value' => 'Submit attempt',
+    'class' => 'btn btn-primary',
+]);
+
+echo html_writer::end_tag('form');
+echo $OUTPUT->footer();
