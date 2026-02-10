@@ -6,14 +6,10 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="quizid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="ispublic" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Whether the quiz is public (0=private, 1=public)"/>
-        <FIELD NAME="hash" TYPE="char" LENGTH="32" NOTNULL="false" SEQUENCE="false" COMMENT="Unique hash for public access URL"/>
-        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         <KEY NAME="uq_quizid" TYPE="unique" FIELDS="quizid"/>
-        <KEY NAME="uq_hash" TYPE="unique" FIELDS="hash"/>
       </KEYS>
       <INDEXES>
         <INDEX NAME="idx_ispublic" UNIQUE="false" FIELDS="ispublic"/>
