@@ -1,5 +1,6 @@
 <?php
 require_once('../../../config.php');
+require_once('../locallib.php');
 require_once($CFG->libdir . '/questionlib.php');
 require_once('../classes/attempt.php');
 require_once('../classes/session.php');
@@ -57,7 +58,7 @@ echo $OUTPUT->header();
 
 echo html_writer::start_tag('form', [
     'method' => 'post',
-    'action' => new moodle_url('/local/publictestlink/pages/process.php', [
+    'action' => new moodle_url($PLUGIN_URL . '/process.php', [
         'attemptid' => $attemptid,
         'cmid' => $cmid,
     ]),

@@ -1,5 +1,6 @@
 <?php
 require_once('../../../config.php');
+require_once('../locallib.php');
 require_once($CFG->libdir . '/questionlib.php');
 require_once('../classes/attempt.php');
 require_once('../classes/session.php');
@@ -12,7 +13,7 @@ $isfinish = optional_param('finishattempt', false, PARAM_BOOL);
 
 $session = publictestlink_session::check_session();
 if (!$session) {
-    redirect(new moodle_url($PUBLIC_URL . '/landing.php', ['cmid' => $cmid]));
+    redirect(new moodle_url($PLUGIN_URL . '/landing.php', ['cmid' => $cmid]));
 }
 
 $cm = get_coursemodule_from_id('quiz', $cmid, 0, false, MUST_EXIST);
@@ -23,7 +24,7 @@ $attempt = publictestlink_attempt::from_id($attemptid);
 
 // Shadow-user ownership check
 if ($attempt->get_shadow_user()->get_id() !== $session->get_user()->get_id()) {
-    redirect(new moodle_url($PUBLIC_URL . '/landing.php', ['cmid' => $cmid]));
+    redirect(new moodle_url($PLUGIN_URL . '/landing.php', ['cmid' => $cmid]));
 }
 
 $quba = $attempt->get_quba();

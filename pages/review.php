@@ -1,5 +1,7 @@
 <?php
 require_once('../../../config.php');
+require_once('../locallib.php');
+
 require_once($CFG->libdir . '/questionlib.php');
 require_once('../classes/attempt.php');
 require_once('../classes/session.php');
@@ -38,7 +40,7 @@ if ($attempt->get_shadow_user()->get_id() !== $session->get_user()->get_id()) {
 $quba = $attempt->get_quba();
 $quba->set_preferred_behaviour($quiz->preferredbehaviour);
 
-$PAGE->set_url($PLUGIN_URL . '/local/publictestlink/review.php', ['attemptid' => $attemptid]);
+$PAGE->set_url($PLUGIN_URL . '/review.php', ['attemptid' => $attemptid, 'cmid' => $cmid]);
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title('Review');
 $PAGE->set_heading('The results are in!');
