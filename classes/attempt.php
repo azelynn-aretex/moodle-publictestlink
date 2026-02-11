@@ -61,7 +61,8 @@ class publictestlink_attempt {
             WHERE quizid = :quizid
                 AND shadowuserid = :shadowuserid
                 AND state = :inprogress
-            ORDER BY timestart DESC",
+            ORDER BY timestart DESC
+            LIMIT 1",
             [
                 'quizid' => $quizid,
                 'shadowuserid' => $shadowuserid,
@@ -82,6 +83,19 @@ class publictestlink_attempt {
         }
 
         return self::create($quizid, $shadowuserid, $quba);
+    }
+
+    public static function start_new_or_resume(
+        int $quizid,
+        int $shadowuserid,
+        question_usage_by_activity $quba
+    ): self {
+        $attempt = self::get_or_create($quizid, $shadowuserid, $quba);
+        if ($attempt->state !== self::IN_PROGRESS) {
+            $attempt = self::create($quizid, $shadowuserid, $quba);
+        }
+
+        return $attempt;
     }
 
     public static function from_id(int $id) {
@@ -133,7 +147,7 @@ class publictestlink_attempt {
 
         $DB->update_record('local_publictestlink_quizattempt', [
             'id' => $this->id,
-            'state' => $this->state
+            'state' => self::SUBMITTED
         ]);
 
         $this->state = self::SUBMITTED;

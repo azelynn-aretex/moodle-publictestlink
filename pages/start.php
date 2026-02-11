@@ -54,7 +54,7 @@ foreach ($structure->get_slots() as $slot) {
 
 $quba->start_all_questions();
 
-$attempt = publictestlink_attempt::get_or_create(
+$attempt = publictestlink_attempt::start_new_or_resume(
     $quiz->id,
     $session->get_user()->get_id(),
     $quba
