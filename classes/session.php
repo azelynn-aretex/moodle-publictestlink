@@ -159,11 +159,18 @@ class publictestlink_session {
         return $_COOKIE[self::COOKIE_NAME];
     }
 
-    public static function check_session() {
+    public static function check_session(): ?self {
         $rawtoken = self::get_cookie();
         if (empty($rawtoken)) return null;
 
-        return self::access_session($rawtoken);
+        try {
+            return self::access_session($rawtoken);
+        } catch (moodle_exception $e) {
+            if ($e->errorcode === 'notloggedin') {
+                return null;
+            }
+            throw $e;
+        }
     }
 
     public function is_expired(): bool {
