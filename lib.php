@@ -1,6 +1,8 @@
 <?php
 defined('MOODLE_INTERNAL') || die();
 
+require_once(__DIR__ . '/classes/quizcustom.php');
+
 /**
  * Add public quiz settings to the quiz module form.
  *  
@@ -14,20 +16,17 @@ function local_publictestlink_coursemodule_standard_elements($formwrapper, $mfor
     $current = $formwrapper->get_current();
     
     // Check if we're editing a quiz
-    if (!isset($current->modulename) || $current->modulename !== 'quiz') {
+    if (!isset($current->modulename) || $current->modulename !== 'quiz' || empty($current->instance)) {
         return;
     }
+
+    $quizcustom = $DB->get_record('local_publictestlink_quizcustom', ['quizid' => $current->instance]);
     
-    $ispublic = 0;
-    
-    if (!empty($current->instance)) {
-        $record = $DB->get_record('local_publictestlink_quizcustom', ['quizid' => $current->instance]);
-        
-        if ($record) {
-            $ispublic = (int)$record->ispublic;
-        }
-        // If no record exists, $ispublic remains 0
+    $ispublic = false;
+    if ($quizcustom !== null) {
+        $ispublic = $quizcustom->is_public();
     }
+
     
     // Create form element group
     $mform->addElement('header', 'publicquizheader', get_string('publicquizsettings', 'local_publictestlink'));
@@ -74,21 +73,15 @@ function local_publictestlink_coursemodule_edit_post_actions($data, $course) {
     if (isset($data->publicquiz)) {
         $ispublic = (int)$data->publicquiz;
     }
-    
-    $record = $DB->get_record('local_publictestlink_quizcustom', ['quizid' => $quizid]);
-    
-    if ($record) {
-        // Update existing record
-        $record->ispublic = $ispublic;
-        $DB->update_record('local_publictestlink_quizcustom', $record);
+
+    $quizcustom = publictestlink_quizcustom::from_id($quizid);
+
+    if ($quizcustom === null) {
+        $quizcustom = publictestlink_quizcustom::create(
+            $quizid, $ispublic
+        );
     } else {
-        // FIXED: Always create a record if one doesn't exist
-        // This handles BOTH cases: ispublic=1 AND ispublic=0
-        $newrecord = (object)[
-            'quizid' => $quizid,
-            'ispublic' => $ispublic
-        ];
-        $DB->insert_record('local_publictestlink_quizcustom', $newrecord);
+        $quizcustom->set_is_public($ispublic);
     }
     
     return $data;
@@ -105,6 +98,9 @@ function local_publictestlink_pre_course_module_delete($cm) {
     if ($cm->modname !== 'quiz') {
         return;
     }
-    
-    $DB->delete_records('local_publictestlink_quizcustom', ['quizid' => $cm->instance]);
+
+    $quizcustom = publictestlink_quizcustom::from_id($cm->id);
+    if ($quizcustom === null) return;
+
+    $quizcustom->delete();
 }

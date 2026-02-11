@@ -41,7 +41,7 @@ class publictestlink_quizcustom {
         return $this->quizid;
     }
 
-    public function is_public(): string {
+    public function is_public(): bool {
         return $this->ispublic;
     }
 
@@ -55,5 +55,12 @@ class publictestlink_quizcustom {
         ]);
 
         $this->ispublic = $ispublic;
+    }
+
+    public function delete() {
+        global $DB;
+        /** @var moodle_database $DB */
+
+        $DB->delete_records('local_publictestlink_quizcustom', ['quizid' => $this->quizid]);
     }
 }
