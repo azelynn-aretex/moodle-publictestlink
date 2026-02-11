@@ -15,7 +15,9 @@ class hook_callbacks {
      * @param before_footer_html_generation $hook
      */
     public static function before_footer_html_generation(before_footer_html_generation $hook): void {
-        global $CFG;
+        global $CFG, $PAGE;
+
+        \core\notification::add('Test!', \core\output\notification::NOTIFY_SUCCESS);
 
         // Check setting from config.php - this is the primary source
         // If not set in config, default to true (hide UI)
@@ -23,6 +25,15 @@ class hook_callbacks {
 
         // Add current setting as an HTML comment into the footer (do not echo before DOCTYPE).
         $hook->add_html("<!-- PublicTestLink: hide_ui = " . ($hide_ui ? 'true' : 'false') . " -->\n");
+
+        // Check if this is a quiz report page with 'grades' mode selected
+        if (self::is_quiz_report_page_with_grades_mode()) {
+            $table_html = self::get_quiz_results_table();
+            if ($table_html) {
+                // Inject the table before footer but after main content
+                $hook->add_html($table_html);
+            }
+        }
 
         // If hiding is disabled, don't inject CSS
         if (!$hide_ui) {
@@ -45,5 +56,54 @@ class hook_callbacks {
             "</style>\n";
 
         $hook->add_html($css);
+    }
+
+    /**
+     * Check if we're on a quiz report page with 'grades' (overview) mode selected.
+     *
+     * @return bool
+     */
+    private static function is_quiz_report_page_with_grades_mode(): bool {
+        global $PAGE;
+        
+        // Check if this is a quiz report page by page name
+        if (strpos($PAGE->pagetype, 'mod-quiz-report') !== 0) {
+            return false;
+        }
+        
+        // Check if the report mode is 'overview' (which is the "Grades" form selection)
+        $mode = optional_param('mode', '', PARAM_ALPHA);
+        
+        return $mode === 'overview';
+    }
+
+    /**
+     * Generate the quiz results table HTML.
+     *
+     * @return string HTML table for quiz results
+     */
+
+    private static function get_quiz_results_table(): string {
+        global $PAGE;
+        
+        // Create table with quiz results columns
+        $table = new \html_table();
+        $table->head = array('Email', 'First name', 'Last name', 'Status', 'Started', 'Completed', 'Duration', 'Grade');
+        
+        // Sample rows for visual purposes (customize with actual quiz data as needed)
+        $rows = array();
+        $rows[] = array('shadow1@example.com', 'Shadow', 'One', 'Completed', '2026-02-10 09:00', '2026-02-10 09:20', '00:20', '85%');
+        $rows[] = array('shadow2@example.com', 'Shadow', 'Two', 'Completed', '2026-02-09 14:10', '2026-02-09 14:30', '00:20', '92%');
+        $rows[] = array('shadow3@example.com', 'Shadow', 'Three', 'In progress', '2026-02-10 10:05', '-', '-', '-');
+        
+        $table->data = $rows;
+        
+        // Wrap table with styling and heading
+        $html = '<div id="publictestlink-results-table" style="margin: 2rem 0;">' . "\n";
+        $html .= '<h3>Quiz Results</h3>' . "\n";
+        $html .= \html_writer::table($table);
+        $html .= '</div>' . "\n";
+        
+        return $html;
     }
 }
