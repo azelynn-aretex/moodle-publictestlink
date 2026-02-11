@@ -29,7 +29,17 @@ class publictestlink_quizcustom {
         if (!$record) return null;
 
         return new self(
-            $record->id, $record->quizid, $record->ispublic === 1
+            $record->id, $record->quizid, $record->ispublic === "1"
+        );
+    }
+
+    public static function from_quizid(int $quizid): ?self {
+        global $DB;
+        $record = $DB->get_record('local_publictestlink_quizcustom', ['quizid' => $quizid], "*", IGNORE_MISSING);
+        if (!$record) return null;
+
+        return new self(
+            $record->id, $record->quizid, $record->ispublic === "1"
         );
     }
 
@@ -41,7 +51,7 @@ class publictestlink_quizcustom {
         return $this->quizid;
     }
 
-    public function is_public(): bool {
+    public function get_ispublic(): bool {
         return $this->ispublic;
     }
 

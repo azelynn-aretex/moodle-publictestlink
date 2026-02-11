@@ -10,8 +10,6 @@ require_once(__DIR__ . '/classes/quizcustom.php');
  * @param MoodleQuickForm $mform The form instance
  */
 function local_publictestlink_coursemodule_standard_elements($formwrapper, $mform) {
-    global $DB;
-    
     // Get current module info
     $current = $formwrapper->get_current();
     
@@ -20,11 +18,12 @@ function local_publictestlink_coursemodule_standard_elements($formwrapper, $mfor
         return;
     }
 
-    $quizcustom = $DB->get_record('local_publictestlink_quizcustom', ['quizid' => $current->instance]);
+    $quizid = (int)$current->instance;
+    $quizcustom = publictestlink_quizcustom::from_quizid($quizid);
     
     $ispublic = false;
     if ($quizcustom !== null) {
-        $ispublic = $quizcustom->is_public();
+        $ispublic = $quizcustom->get_ispublic();
     }
 
     
@@ -58,13 +57,11 @@ function local_publictestlink_coursemodule_standard_elements($formwrapper, $mfor
  * @return stdClass Updated form data
  */
 function local_publictestlink_coursemodule_edit_post_actions($data, $course) {
-    global $DB;
-    
     if (!isset($data->modulename) || $data->modulename !== 'quiz' || empty($data->instance)) {
         return $data;
     }
     
-    $quizid = $data->instance;
+    $quizid = (int)$data->instance;
     
     // Get checkbox value
     $ispublic = optional_param('publicquiz', 0, PARAM_INT);
@@ -74,7 +71,7 @@ function local_publictestlink_coursemodule_edit_post_actions($data, $course) {
         $ispublic = (int)$data->publicquiz;
     }
 
-    $quizcustom = publictestlink_quizcustom::from_id($quizid);
+    $quizcustom = publictestlink_quizcustom::from_quizid($quizid);
 
     if ($quizcustom === null) {
         $quizcustom = publictestlink_quizcustom::create(
@@ -87,20 +84,20 @@ function local_publictestlink_coursemodule_edit_post_actions($data, $course) {
     return $data;
 }
 
-/**
- * Delete public quiz records when a quiz is deleted.
- *
- * @param cm_info $cm The course module object
- */
-function local_publictestlink_pre_course_module_delete($cm) {
-    global $DB;
-    
-    if ($cm->modname !== 'quiz') {
-        return;
-    }
+// /**
+//  * Delete public quiz records when a quiz is deleted.
+//  *
+//  * @param cm_info $cm The course module object
+//  */
+// function local_publictestlink_pre_course_module_delete($cm) {
+//     if ($cm->modname !== 'quiz') {
+//         return;
+//     }
 
-    $quizcustom = publictestlink_quizcustom::from_id($cm->id);
-    if ($quizcustom === null) return;
+//     echo 'test';
 
-    $quizcustom->delete();
-}
+//     $quizcustom = publictestlink_quizcustom::from_quizid($cm->id);
+//     if ($quizcustom === null) return;
+
+//     $quizcustom->delete();
+// }
