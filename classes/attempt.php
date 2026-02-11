@@ -91,7 +91,7 @@ class publictestlink_attempt {
         question_usage_by_activity $quba
     ): self {
         $attempt = self::get_or_create($quizid, $shadowuserid, $quba);
-        if ($attempt->state !== self::IN_PROGRESS) {
+        if (!$attempt->is_in_progress()) {
             $attempt = self::create($quizid, $shadowuserid, $quba);
         }
 
@@ -151,5 +151,9 @@ class publictestlink_attempt {
         ]);
 
         $this->state = self::SUBMITTED;
+    }
+
+    public function is_in_progress() {
+        return $this->state === self::IN_PROGRESS;
     }
 }

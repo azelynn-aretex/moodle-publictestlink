@@ -28,7 +28,10 @@ $context = context_module::instance($cm->id);
 
 $attempt = publictestlink_attempt::from_id($attemptid);
 
-if ($attempt->get_shadow_user()->get_id() !== $session->get_user()->get_id()) {
+if (
+    $attempt->get_shadow_user()->get_id() !== $session->get_user()->get_id() ||
+    !$attempt->is_in_progress()
+) {
     redirect(
         new moodle_url($PLUGIN_URL . '/landing.php', ['cmid' => $cmid])
     );
