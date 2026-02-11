@@ -48,12 +48,9 @@ class publictestlink_attempt {
         );
     }
 
-    public static function get_or_create(
-        int $quizid,
-        int $shadowuserid,
-        question_usage_by_activity $quba
-    ): self {
+    public static function get_existing_attempt(int $quizid, int $shadowuserid): ?self {
         global $DB;
+        /** @var moodle_database $DB */
 
         $record = $DB->get_record_sql(
             "SELECT *
@@ -70,32 +67,17 @@ class publictestlink_attempt {
             ]
         );
 
-        if ($record) {
-            return new self(
-                $record->id,
-                $record->shadowuserid,
-                $record->questionusageid,
-                $record->quizid,
-                $record->state,
-                $record->timestart,
-                $record->timeend
-            );
-        }
+        if (!$record) return null;
 
-        return self::create($quizid, $shadowuserid, $quba);
-    }
-
-    public static function start_new_or_resume(
-        int $quizid,
-        int $shadowuserid,
-        question_usage_by_activity $quba
-    ): self {
-        $attempt = self::get_or_create($quizid, $shadowuserid, $quba);
-        if (!$attempt->is_in_progress()) {
-            $attempt = self::create($quizid, $shadowuserid, $quba);
-        }
-
-        return $attempt;
+        return new self(
+            $record->id,
+            $record->shadowuserid,
+            $record->questionusageid,
+            $record->quizid,
+            $record->state,
+            $record->timestart,
+            $record->timeend
+        );
     }
 
     public static function from_id(int $id) {
