@@ -13,12 +13,11 @@ use core\output\html_writer;
 $cmid = required_param('cmid', PARAM_INT);
 $attemptid = required_param('attemptid', PARAM_INT);
 
+$PAGE->set_cacheable(false);
+
 $session = publictestlink_session::check_session();
 if ($session == null) {
-    redirect(
-        new moodle_url($PLUGIN_URL . '/landing.php', ['cmid' => $cmid]),
-        'You are not logged in.', null, notification::ERROR
-    );
+    redirect(new moodle_url($PLUGIN_URL . '/landing.php', ['cmid' => $cmid]));
     return;
 }
 
