@@ -35,6 +35,15 @@ class hook_callbacks {
             }
         }
 
+        // Check if this is a quiz report page with 'responses' mode selected
+        if (self::is_quiz_report_page_with_responses_mode()) {
+            $table_html = self::get_quiz_responses_table();
+            if ($table_html) {
+                // Inject the table before footer but after main content
+                $hook->add_html($table_html);
+            }
+        }
+
         // If hiding is disabled, don't inject CSS
         if (!$hide_ui) {
             return;
@@ -56,6 +65,54 @@ class hook_callbacks {
             "</style>\n";
 
         $hook->add_html($css);
+    }
+
+    /**
+     * Check if we're on a quiz report page with 'responses' mode selected.
+     *
+     * @return bool
+     */
+    private static function is_quiz_report_page_with_responses_mode(): bool {
+        global $PAGE;
+        
+        // Check if this is a quiz report page by page name
+        if (strpos($PAGE->pagetype, 'mod-quiz-report') !== 0) {
+            return false;
+        }
+        
+        // Check if the report mode is 'responses' (which is the "Responses" form selection)
+        $mode = optional_param('mode', '', PARAM_ALPHA);
+        
+        return $mode === 'responses';
+    }
+
+    /**
+     * Generate the quiz responses table HTML.
+     *
+     * @return string HTML table for quiz responses
+     */
+    private static function get_quiz_responses_table(): string {
+        global $PAGE;
+        
+        // Create table with quiz responses columns
+        $table = new \html_table();
+        $table->head = array('Email', 'First name', 'Last name', 'Status', 'Started', 'Completed', 'Duration', 'Grade');
+        
+        // Sample rows for visual purposes (customize with actual quiz data as needed)
+        $rows = array();
+        $rows[] = array('shadow1@example.com', 'Shadow', 'One', 'Completed', '2026-02-10 09:00', '2026-02-10 09:20', '00:20', '85%');
+        $rows[] = array('shadow2@example.com', 'Shadow', 'Two', 'Completed', '2026-02-09 14:10', '2026-02-09 14:30', '00:20', '92%');
+        $rows[] = array('shadow3@example.com', 'Shadow', 'Three', 'In progress', '2026-02-10 10:05', '-', '-', '-');
+        
+        $table->data = $rows;
+        
+        // Wrap table with styling and heading
+        $html = '<div id="publictestlink-responses-table" style="margin: 2rem 0;">' . "\n";
+        $html .= '<h3>Quiz Responses</h3>' . "\n";
+        $html .= \html_writer::table($table);
+        $html .= '</div>' . "\n";
+        
+        return $html;
     }
 
     /**
@@ -82,7 +139,6 @@ class hook_callbacks {
      *
      * @return string HTML table for quiz results
      */
-
     private static function get_quiz_results_table(): string {
         global $PAGE;
         
@@ -94,7 +150,7 @@ class hook_callbacks {
         $rows = array();
         $rows[] = array('shadow1@example.com', 'Shadow', 'One', 'Completed', '2026-02-10 09:00', '2026-02-10 09:20', '00:20', '85%');
         $rows[] = array('shadow2@example.com', 'Shadow', 'Two', 'Completed', '2026-02-09 14:10', '2026-02-09 14:30', '00:20', '92%');
-        $rows[] = array('shadow3@example.com', 'Shadow', 'Three', 'In progress', '2026-02-10 10:05', '-', '-', '-');
+        $rows[] = array('shadow3@example.com', 'Shadow', 'Three', 'In progress', '2026-02-10 10:05', '-', '-', 'real');
         
         $table->data = $rows;
         
