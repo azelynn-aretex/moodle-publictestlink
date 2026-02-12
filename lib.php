@@ -28,6 +28,13 @@ function local_publictestlink_coursemodule_standard_elements($formwrapper, $mfor
     }
 
 
+
+    $mform->insertElementBefore(
+        $mform->addElement('header', 'publicquizheader', get_string('publicquizsettings', 'local_publictestlink')),
+        'timing'
+    );
+    $mform->setExpanded('publicquizheader', false);
+
     $mform->insertElementBefore(
         $mform->createElement(
             'advcheckbox',
@@ -76,7 +83,9 @@ function local_publictestlink_coursemodule_edit_post_actions($data) {
 
 
     if ($ispublic) {
-        publictestlink_link_token::create()
+        publictestlink_link_token::create($quizid);
+    } else {
+        publictestlink_link_token::delete($quizid);
     }
 
     return $data;
