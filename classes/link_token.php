@@ -1,5 +1,7 @@
 <?php
 
+use core\exception\moodle_exception;
+
 class publictestlink_link_token {
     public function __construct(
         protected int $id,
@@ -56,6 +58,17 @@ class publictestlink_link_token {
         return new self(
             $record->id, $quizid, $record->token, $record->timecreated
         );
+    }
+
+    public static function require_token(string $token) {
+        $invalidtoken = new moodle_exception('invalidtoken', MODULE, '/');
+
+        if (empty($token)) throw $invalidtoken;
+
+        $linktoken = self::from_token($token);
+        if ($linktoken === null) throw $invalidtoken;
+
+        return $linktoken;
     }
 
     public function get_id(): int {
