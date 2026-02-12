@@ -126,6 +126,17 @@ class publictestlink_attempt {
         return $this->state;
     }
 
+    public function get_state_readable(): string {
+        global $MODULE;
+
+        $map = [
+            self::IN_PROGRESS => get_string('attempt_state_inprogress', $MODULE),
+            self::SUBMITTED => get_string('attempt_state_submitted', $MODULE)
+        ];
+
+        return $map[$this->state];
+    }
+
     public function get_timestart(): int {
         return $this->timestart;
     }
