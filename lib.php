@@ -26,35 +26,26 @@ function local_publictestlink_coursemodule_standard_elements($formwrapper, $mfor
         $ispublic = $quizcustom->get_ispublic();
     }
 
-    
-    // Create form element group
-    $mform->addElement('header', 'publicquizheader', get_string('publicquizsettings', 'local_publictestlink'));
-    $mform->setExpanded('publicquizheader');
-    
-    // Add checkbox
-    $mform->addElement('advcheckbox', 'publicquiz', 
-        get_string('makequizpublic', 'local_publictestlink'),
-        get_string('makequizpublic_desc', 'local_publictestlink'),
-        array('group' => 1),
-        array(0, 1)
+
+    $mform->insertElementBefore(
+        $mform->createElement(
+            'advcheckbox',
+            'ispublic',
+            'Make quiz public',
+            'Allow anyone with the link to access this quiz without login',
+            ['group' => 1],
+            [0, 1]
+        ),
+        'timing'
     );
-    
-    $mform->setDefault('publicquiz', $ispublic);
-    $mform->setType('publicquiz', PARAM_INT);
-    $mform->addHelpButton('publicquiz', 'makequizpublic', 'local_publictestlink');
-    
-    // Try to move it to a more visible position
-    if ($mform->elementExists('name')) {
-        $mform->insertElementBefore($mform->getElement('publicquizheader'), 'name');
-    }
+
+    $mform->setDefault('ispublic', $ispublic);
+    $mform->setType('ispublic', PARAM_INT);
+    $mform->addHelpButton('ispublic', 'makequizpublic', 'local_publictestlink');
 }
 
 /**
- * Process the public quiz setting when quiz form is submitted.
- *
- * @param stdClass $data The form data
- * @param stdClass $course The course
- * @return stdClass Updated form data
+ * Save checkbox value
  */
 function local_publictestlink_coursemodule_edit_post_actions($data) {
     if (!isset($data->modulename) || $data->modulename !== 'quiz' || empty($data->instance)) {
@@ -64,12 +55,12 @@ function local_publictestlink_coursemodule_edit_post_actions($data) {
     $quizid = (int)$data->coursemodule;
     
     // Get checkbox value
-    $ispublic = (bool)optional_param('publicquiz', 0, PARAM_INT);
+    $ispublic = (bool)optional_param('ispublic', 0, PARAM_INT);
 
     
     // Also check $data object in case Moodle processed it
-    if (isset($data->publicquiz)) {
-        $ispublic = (bool)$data->publicquiz;
+    if (isset($data->ispublic)) {
+        $ispublic = (bool)$data->ispublic;
     }
 
     $quizcustom = publictestlink_quizcustom::from_quizid($quizid);
@@ -81,7 +72,7 @@ function local_publictestlink_coursemodule_edit_post_actions($data) {
     } else {
         $quizcustom->set_is_public($ispublic);
     }
-    
+
     return $data;
 }
 
