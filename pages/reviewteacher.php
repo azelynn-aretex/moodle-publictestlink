@@ -50,31 +50,32 @@ echo $OUTPUT->header();
 
 
 echo html_writer::start_div('quizattemptsummary mb-4');
-    echo html_writer::start_tag('table', ['class' => 'generaltable']);
+    echo html_writer::start_tag('table', ['class' => 'table generaltable generalbox quizreviewsummary']);
         echo html_writer::start_tag('tbody');
             $shadowuser = $attempt->get_shadow_user();
 
             echo html_writer::tag('tr',
-                html_writer::tag('th', get_string('respondent', $MODULE)) .
+                html_writer::tag('th', get_string('respondent', $MODULE), ['class' => 'cell']) .
                 html_writer::tag('td',
-                    "{$shadowuser->get_firstname()} {$shadowuser->get_lastname()} ({$shadowuser->get_email()})"
+                    "{$shadowuser->get_firstname()} {$shadowuser->get_lastname()} ({$shadowuser->get_email()})",
+                    ['class' => 'cell']
                 )
             );
 
             echo html_writer::tag('tr',
-                html_writer::tag('th', get_string('attempt_state', $MODULE)) .
-                html_writer::tag('td', $attempt->get_state_readable())
+                html_writer::tag('th', get_string('attempt_state', $MODULE), ['class' => 'cell']) .
+                html_writer::tag('td', $attempt->get_state_readable(), ['class' => 'cell'])
             );
 
             echo html_writer::tag('tr',
-                html_writer::tag('th', get_string('started_on', $MODULE)) .
-                html_writer::tag('td', userdate($attempt->get_timestart()))
+                html_writer::tag('th', get_string('started_on', $MODULE), ['class' => 'cell']) .
+                html_writer::tag('td', userdate($attempt->get_timestart()), ['class' => 'cell'])
             );
 
             if ($attempt->get_timeend()) {
                 echo html_writer::tag('tr',
-                    html_writer::tag('th', get_string('completed_on', $MODULE)) .
-                    html_writer::tag('td', userdate($attempt->get_timeend()))
+                    html_writer::tag('th', get_string('completed_on', $MODULE), ['class' => 'cell']) .
+                    html_writer::tag('td', userdate($attempt->get_timeend()), ['class' => 'cell'])
                 );
             }
 
