@@ -60,7 +60,7 @@ function local_publictestlink_coursemodule_standard_elements($formwrapper, $mfor
 
 
     if ($ispublic) {
-        $linktoken = publictestlink_link_token::from_quizid($quizid);
+        $linktoken = publictestlink_link_token::ensure_for_quiz($quizid);
 
         $publicurl = new moodle_url(
             PLUGIN_URL . '/landing.php',

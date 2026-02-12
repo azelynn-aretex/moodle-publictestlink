@@ -60,6 +60,15 @@ class publictestlink_link_token {
         );
     }
 
+    public static function ensure_for_quiz(int $quizid): self {
+        $existing = self::from_quizid($quizid);
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        return self::create($quizid);
+    }
+
     public static function require_token(string $token) {
         $invalidtoken = new moodle_exception('invalidtoken', MODULE, '/');
 
