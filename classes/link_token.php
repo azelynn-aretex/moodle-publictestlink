@@ -36,20 +36,25 @@ class publictestlink_link_token {
 
     public static function from_token(string $token): ?self {
         global $DB;
-        $record = $DB->get_record(
-            'local_publictestlink_session',
-            [
-                'token' => $token,
-                'isrevoked' => 0
-            ],
-            "*",
-            IGNORE_MISSING
-        );
+        /** @var moodle_database $DB */
+        $record = $DB->get_record('local_publictestlink_linktoken', ['token' => $token], "*", IGNORE_MISSING);
 
         if (!$record) return null;
 
         return new self(
             $record->id, $record->quizid, $token, $record->timecreated
+        );
+    }
+
+    public static function from_quizid(int $quizid) {
+        global $DB;
+        /** @var moodle_database $DB */
+        $record = $DB->get_record('local_publictestlink_linktoken', ['quizid' => $quizid], "*", IGNORE_MISSING);
+
+        if (!$record) return null;
+
+        return new self(
+            $record->id, $quizid, $record->token, $record->timecreated
         );
     }
 
