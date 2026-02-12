@@ -91,7 +91,10 @@ foreach ($quba->get_slots() as $slot) {
 
 echo html_writer::div(
     html_writer::link(
-        new moodle_url($PLUGIN_URL . '/exit.php'),
+        new moodle_url('/mod/quiz/report.php', [
+            'id'     => $cm->id,
+            'mode'   => 'overview', // default attempts list
+        ]),
         'Finish review'
     ),
     'd-flex flex-row w-full justify-content-end'
