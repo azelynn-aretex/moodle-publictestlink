@@ -18,7 +18,7 @@ function local_publictestlink_coursemodule_standard_elements($formwrapper, $mfor
         return;
     }
 
-    $quizid = (int)$current->instance;
+    $quizid = (int)$current->coursemodule;
     $quizcustom = publictestlink_quizcustom::from_quizid($quizid);
     
     $ispublic = false;
@@ -56,19 +56,20 @@ function local_publictestlink_coursemodule_standard_elements($formwrapper, $mfor
  * @param stdClass $course The course
  * @return stdClass Updated form data
  */
-function local_publictestlink_coursemodule_edit_post_actions($data, $course) {
+function local_publictestlink_coursemodule_edit_post_actions($data) {
     if (!isset($data->modulename) || $data->modulename !== 'quiz' || empty($data->instance)) {
         return $data;
     }
     
-    $quizid = (int)$data->instance;
+    $quizid = (int)$data->coursemodule;
     
     // Get checkbox value
-    $ispublic = optional_param('publicquiz', 0, PARAM_INT);
+    $ispublic = (bool)optional_param('publicquiz', 0, PARAM_INT);
+
     
     // Also check $data object in case Moodle processed it
     if (isset($data->publicquiz)) {
-        $ispublic = (int)$data->publicquiz;
+        $ispublic = (bool)$data->publicquiz;
     }
 
     $quizcustom = publictestlink_quizcustom::from_quizid($quizid);
