@@ -12,26 +12,19 @@ class publictestlink_link_token {
         return bin2hex(random_bytes(32));
     }
 
-    private static function hash_token(string $token): string {
-        return hash('sha256', $token);
-    }
-
     public static function create(int $quizid): self {
         global $DB;
         /** @var moodle_database $DB */
 
-        $rawtoken = self::generate_token(); // 64 chars
-        $hashedtoken = self::hash_token($rawtoken);
-
         $record = (object) [
             'quizid' => $quizid,
-            'tokenhash' => $hashedtoken,
+            'token' => self::generate_token(),
             'timecreated' => time()
         ];
         $id = $DB->insert_record('local_publictestlink_linktoken', $record);
 
         return new self(
-            $id, $record->quizid, $rawtoken, $record->timecreated,
+            $id, $record->quizid, $record->rawtoken, $record->timecreated,
         );
     }
 
@@ -41,12 +34,12 @@ class publictestlink_link_token {
         $DB->delete_records('local_publictestlink_linktoken', ['quizid' => $quizid], IGNORE_MISSING);
     }
 
-    public static function from_token(string $rawtoken): ?self {
+    public static function from_token(string $token): ?self {
         global $DB;
         $record = $DB->get_record(
             'local_publictestlink_session',
             [
-                'token' => self::hash_token($rawtoken),
+                'token' => $token,
                 'isrevoked' => 0
             ],
             "*",
@@ -56,7 +49,7 @@ class publictestlink_link_token {
         if (!$record) return null;
 
         return new self(
-            $record->id, $record->quizid, $rawtoken, $record->timecreated
+            $record->id, $record->quizid, $token, $record->timecreated
         );
     }
 
