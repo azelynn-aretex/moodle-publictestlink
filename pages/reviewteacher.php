@@ -79,10 +79,35 @@ echo html_writer::start_div('quizattemptsummary mb-4');
                 html_writer::tag('td', userdate($attempt->get_timestart()), ['class' => 'cell'])
             );
 
-            if ($attempt->get_timeend()) {
+            if (!$attempt->is_in_progress()) {
                 echo html_writer::tag('tr',
                     html_writer::tag('th', get_string('completed_on', $MODULE), ['class' => 'cell']) .
                     html_writer::tag('td', userdate($attempt->get_timeend()), ['class' => 'cell'])
+                );
+
+                echo html_writer::tag('tr',
+                    html_writer::tag('th', get_string('duration', $MODULE), ['class' => 'cell']) .
+                    html_writer::tag('td', format_time($attempt->get_timeend() - $attempt->get_timestart()), ['class' => 'cell'])
+                );
+
+                echo html_writer::tag('tr',
+                    html_writer::tag('th', get_string('marks', $MODULE), ['class' => 'cell']) .
+                    html_writer::tag('td',
+                        format_float($attempt->get_total_mark(), 2) . '/' . format_float($attempt->get_max_mark(), 2),
+                        ['class' => 'cell']
+                    )
+                );
+
+                echo html_writer::tag('tr',
+                    html_writer::tag('th', get_string('grade', $MODULE), ['class' => 'cell']) .
+                    html_writer::tag('td',
+                        get_string('outof', 'quiz', (object)[
+                            'grade'    => html_writer::tag('b', quiz_format_grade($attempt->get_quizobj()->get_quiz(), $attempt->get_scaled_grade())),
+                            'maxgrade' => quiz_format_grade($attempt->get_quizobj()->get_quiz(), $attempt->get_max_grade()),
+                        ]) .
+                        ' (' . html_writer::tag('b', format_float($attempt->get_percentage() * 100, 0)) . '%)',
+                        ['class' => 'cell']
+                    )
                 );
             }
 
