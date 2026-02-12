@@ -28,11 +28,17 @@ class publictestlink_link_token {
             'tokenhash' => $hashedtoken,
             'timecreated' => time()
         ];
-        $id = $DB->insert_record('local_publictestlink_quizcustom', $record);
+        $id = $DB->insert_record('local_publictestlink_linktoken', $record);
 
         return new self(
             $id, $record->quizid, $rawtoken, $record->timecreated,
         );
+    }
+
+    public static function delete(int $quizid) {
+        global $DB;
+        /** @var moodle_database $DB */
+        $DB->delete_records('local_publictestlink_linktoken', ['quizid' => $quizid], IGNORE_MISSING);
     }
 
     public static function from_token(string $rawtoken): ?self {
