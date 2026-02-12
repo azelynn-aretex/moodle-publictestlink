@@ -15,6 +15,7 @@ $string['form_email'] = 'Email Address';
 $string['form_firstname'] = 'First Name';
 $string['form_lastname'] = 'Last Name';
 
+$string['accesserror_quiznotpublic'] = 'Cannot access quiz.';
 $string['accesserror_quiznotopen'] = 'Quiz is not open for attempts yet';
 $string['accesserror_quizclosed'] = 'Quiz is closed';
 $string['accesserror_timelimitexpired'] = 'The time limit has been reached';
