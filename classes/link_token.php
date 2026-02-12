@@ -66,6 +66,10 @@ class publictestlink_link_token {
         return $this->quizid;
     }
 
+    public function get_token(): int {
+        return $this->token;
+    }
+
     public function get_timecreated(): int {
         return $this->timecreated;
     }
