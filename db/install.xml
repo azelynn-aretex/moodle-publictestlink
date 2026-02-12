@@ -12,7 +12,7 @@
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="quizid_fk" TYPE="foreign" FIELDS="quizid" REFTABLE="quiz" REFFIELDS="id"/>
+        <KEY NAME="quizid_fk" TYPE="foreign-unique" FIELDS="quizid" REFTABLE="quiz" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
     <TABLE NAME="local_publictestlink_shadowuser" COMMENT="All shadow users">
@@ -69,7 +69,7 @@
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="quizid_fk" TYPE="foreign" FIELDS="quizid" REFTABLE="quiz" REFFIELDS="id"/>
+        <KEY NAME="quizid_fk" TYPE="foreign-unique" FIELDS="quizid" REFTABLE="quiz" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
   </TABLES>

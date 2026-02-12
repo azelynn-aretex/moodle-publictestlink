@@ -2,6 +2,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once(__DIR__ . '/classes/quizcustom.php');
+require_once(__DIR__ . '/classes/link_token.php');
 
 /**
  * Add public quiz settings to the quiz module form.
@@ -71,6 +72,11 @@ function local_publictestlink_coursemodule_edit_post_actions($data) {
         );
     } else {
         $quizcustom->set_is_public($ispublic);
+    }
+
+
+    if ($ispublic) {
+        publictestlink_link_token::create()
     }
 
     return $data;
