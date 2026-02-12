@@ -17,7 +17,7 @@ class hook_callbacks {
     public static function before_footer_html_generation(before_footer_html_generation $hook): void {
         global $CFG, $PAGE;
 
-        \core\notification::add('Test!', \core\output\notification::NOTIFY_SUCCESS);
+        \core\notification::add('real', \core\output\notification::NOTIFY_SUCCESS);
 
         // Check setting from config.php - this is the primary source
         // If not set in config, default to true (hide UI)
