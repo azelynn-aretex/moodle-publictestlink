@@ -24,7 +24,7 @@ class publictestlink_link_token {
         $id = $DB->insert_record('local_publictestlink_linktoken', $record);
 
         return new self(
-            $id, $record->quizid, $record->rawtoken, $record->timecreated,
+            $id, $record->quizid, $record->token, $record->timecreated,
         );
     }
 
@@ -66,7 +66,7 @@ class publictestlink_link_token {
         return $this->quizid;
     }
 
-    public function get_token(): int {
+    public function get_token(): string {
         return $this->token;
     }
 
