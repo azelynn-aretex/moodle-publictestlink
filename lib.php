@@ -1,51 +1,95 @@
 <?php
 defined('MOODLE_INTERNAL') || die();
 
-/**
- * @package local_publictestlink
- * @author azi-team
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
-// Toggle: set to true to hide UI, false to show UI for all users
-$CFG->local_publictestlink_hide_ui = false;
-
-function local_publictestlink_before_footer() {
-	// Note: This function is kept for backwards compatibility.
-	// The main logic is now in classes/hook_callbacks.php via the hook system.
-	// This function may not be called in newer Moodle versions.
-}
+require_once(__DIR__ . '/classes/quizcustom.php');
 
 /**
- * Add "Make quiz public" below the description editor.
+ * Add public quiz settings to the quiz module form.
+ *  
+ * @param moodleform_mod $formwrapper The moodleform_mod instance
+ * @param MoodleQuickForm $mform The form instance
  */
 function local_publictestlink_coursemodule_standard_elements($formwrapper, $mform) {
-    global $PAGE;
-    
+    // Get current module info
     $current = $formwrapper->get_current();
-
-    // Only apply to quiz module
-    if (empty($current->modulename) || $current->modulename !== 'quiz') {
+    
+    // Check if we're editing a quiz
+    if (!isset($current->modulename) || $current->modulename !== 'quiz' || empty($current->instance)) {
         return;
     }
 
-
-    $publicquiz = $mform->createElement(
-        'advcheckbox',
-        'publicquiz',
-        get_string('makequizpublic', 'local_publictestlink')
-    );
-    $mform->insertElementBefore($publicquiz, 'name');
+    $quizid = (int)$current->coursemodule;
+    $quizcustom = publictestlink_quizcustom::from_quizid($quizid);
     
-    $mform->setDefault('publicquiz', 0);
-    $mform->addHelpButton('publicquiz', 'makequizpublic', 'local_publictestlink');
-}
-
-function local_publictestlink_extend_navigation(global_navigation $navigation) {
-    global $PAGE, $CFG;
-
-    if ($PAGE->context->contextlevel == CONTEXT_MODULE && $PAGE->cm->modname == 'quiz') {
-        $url = new moodle_url('results.php', array('id' => $PAGE->cm->id));
-        $node = $PAGE->navigation->add('Public Test Results', $url, navigation_node::TYPE_SETTING);
+    $ispublic = false;
+    if ($quizcustom !== null) {
+        $ispublic = $quizcustom->get_ispublic();
     }
+
+
+    $mform->insertElementBefore(
+        $mform->createElement(
+            'advcheckbox',
+            'ispublic',
+            'Make quiz public',
+            'Allow anyone with the link to access this quiz without login',
+            ['group' => 1],
+            [0, 1]
+        ),
+        'timing'
+    );
+
+    $mform->setDefault('ispublic', $ispublic);
+    $mform->setType('ispublic', PARAM_INT);
+    $mform->addHelpButton('ispublic', 'makequizpublic', 'local_publictestlink');
 }
+
+/**
+ * Save checkbox value
+ */
+function local_publictestlink_coursemodule_edit_post_actions($data) {
+    if (!isset($data->modulename) || $data->modulename !== 'quiz' || empty($data->instance)) {
+        return $data;
+    }
+    
+    $quizid = (int)$data->coursemodule;
+    
+    // Get checkbox value
+    $ispublic = (bool)optional_param('ispublic', 0, PARAM_INT);
+
+    
+    // Also check $data object in case Moodle processed it
+    if (isset($data->ispublic)) {
+        $ispublic = (bool)$data->ispublic;
+    }
+
+    $quizcustom = publictestlink_quizcustom::from_quizid($quizid);
+
+    if ($quizcustom === null) {
+        $quizcustom = publictestlink_quizcustom::create(
+            $quizid, $ispublic
+        );
+    } else {
+        $quizcustom->set_is_public($ispublic);
+    }
+
+    return $data;
+}
+
+// /**
+//  * Delete public quiz records when a quiz is deleted.
+//  *
+//  * @param cm_info $cm The course module object
+//  */
+// function local_publictestlink_pre_course_module_delete($cm) {
+//     if ($cm->modname !== 'quiz') {
+//         return;
+//     }
+
+//     echo 'test';
+
+//     $quizcustom = publictestlink_quizcustom::from_quizid($cm->id);
+//     if ($quizcustom === null) return;
+
+//     $quizcustom->delete();
+// }
