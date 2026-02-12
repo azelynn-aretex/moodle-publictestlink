@@ -44,6 +44,13 @@ class hook_callbacks {
             }
         }
 
+        // Inject JS to add "Public Responses" and "Public Grading" options
+        // to the report mode select dropdowns on the quiz report page.
+        // Place this before the hide-ui early return so it runs regardless of the setting.
+        $js = '<script>(function(){try{if(!/mod\/quiz\/report.php/.test(location.pathname))return;var selects=document.querySelectorAll("select.urlselect");if(!selects.length)return;var u=new URL(location.href);var id=u.searchParams.get("id");if(!id)return;var items=[{mode:"public_responses",text:"Public Responses"},{mode:"public_grading",text:"Public Grading"}];items.forEach(function(it){var opt=document.createElement("option");opt.value="/mod/quiz/report.php?id="+id+"&mode="+it.mode;opt.text=it.text;selects.forEach(function(s){s.appendChild(opt.cloneNode(true));});});}catch(e){console.error(e);}})();</script>';
+
+        $hook->add_html($js);
+
         // If hiding is disabled, don't inject CSS
         if (!$hide_ui) {
             return;
@@ -81,9 +88,10 @@ class hook_callbacks {
         }
         
         // Check if the report mode is 'responses' (which is the "Responses" form selection)
+        // or the public responses mode we inject via JS.
         $mode = optional_param('mode', '', PARAM_ALPHA);
-        
-        return $mode === 'responses';
+
+        return $mode === 'responses' || $mode === 'public_responses';
     }
 
     /**
@@ -129,9 +137,10 @@ class hook_callbacks {
         }
         
         // Check if the report mode is 'overview' (which is the "Grades" form selection)
+        // or the public grading mode we inject via JS.
         $mode = optional_param('mode', '', PARAM_ALPHA);
-        
-        return $mode === 'overview';
+
+        return $mode === 'overview' || $mode === 'public_grading';
     }
 
     /**
