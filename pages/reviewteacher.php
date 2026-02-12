@@ -1,8 +1,10 @@
 <?php
 
+use core\exception\moodle_exception;
 use core\output\html_writer;
 use core\url as moodle_url;
 use mod_quiz\quiz_settings;
+use context;
 
 require_once('../../../config.php');
 require_once('../locallib.php');
@@ -18,9 +20,14 @@ $quizid = $attempt->get_quizid();
 $quizobj = quiz_settings::create($quizid);
 $cm = get_coursemodule_from_id('quiz', $quizobj->get_cmid(), 0, false, MUST_EXIST);
 $context = context_module::instance($cm->id);
+if (!$context) throw new moodle_exception('invalidcontext', $MODULE);
 
 $quba = $attempt->get_quba();
 $quba->set_preferred_behaviour($quiz->preferredbehaviour);
+
+require_login($quizobj->get_course(), false, $cm);
+/** @var context $context */
+require_capability('mod/quiz:viewreports', $context);
 
 
 
