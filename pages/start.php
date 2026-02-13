@@ -12,32 +12,31 @@ require_once('../../../question/engine/lib.php');
 require_once('../locallib.php');
 require_once('../classes/access_manager.php');
 require_once('../classes/session.php');
+require_once('../classes/link_token.php');
 
 use core\url as moodle_url;
 use core\notification;
 use mod_quiz\quiz_settings;
 
-// Page parameters
-$cmid = required_param('cmid', PARAM_INT);
 
 $PAGE->set_cacheable(false);
 
+
+$token = required_param('token', PARAM_ALPHANUMEXT);
+
+$linktoken = publictestlink_link_token::require_token($token);
+
 $session = publictestlink_session::check_session();
-if ($session == null) {
-    redirect(new moodle_url($PLUGIN_URL . '/landing.php', ['cmid' => $cmid]));
+if ($session === null) {
+    redirect(new moodle_url($PLUGIN_URL . '/landing.php', ['token' => $token]));
     return;
 }
 
-$cm = get_coursemodule_from_id('quiz', $cmid, 0, false, MUST_EXIST);
-$quiz = $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST);
-$context = context_module::instance($cm->id);
+$quizid = $linktoken->get_quizid();
+$quizobj = quiz_settings::create($quizid);
+$quiz = $quizobj->get_quiz();
 
-$quizobj = quiz_settings::create($cm->instance);
-
-
-$quizid = $quiz->id;
 $shadowuserid = $session->get_user()->get_id();
-
 $attempt = publictestlink_attempt::get_existing_attempt($quizid, $shadowuserid);
 
 if ($attempt !== null) {
@@ -72,7 +71,6 @@ if ($reasons !== null) {
 
 redirect(
     new moodle_url($PLUGIN_URL . '/attempt.php', [
-        'attemptid' => $attempt->get_id(),
-        'cmid' => $cmid,
+        'token' => $token
     ])
 );
