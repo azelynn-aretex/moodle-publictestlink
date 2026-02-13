@@ -96,8 +96,8 @@ class publictestlink_shadow_user {
 
         $DB->update_record('local_publictestlink_shadowuser', [
             'id' => $this->id,
-            'firstname' => $this->firstname,
-            'lastname' => $this->lastname,
+            'firstname' => $firstname,
+            'lastname' => $lastname,
         ]);
 
         $this->firstname = $firstname;

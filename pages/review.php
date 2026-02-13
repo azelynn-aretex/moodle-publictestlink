@@ -7,6 +7,7 @@ require_once('../classes/attempt.php');
 require_once('../classes/session.php');
 require_once('../classes/access_manager.php');
 require_once('../classes/link_token.php');
+require_once('../classes/user_header_writer.php');
 
 use core\url as moodle_url;
 use core\notification;
@@ -68,19 +69,29 @@ $displayoptions->feedback = question_display_options::VISIBLE;
 $displayoptions->rightanswer = question_display_options::VISIBLE;
 $displayoptions->history = question_display_options::VISIBLE;
 
+$PAGE->add_body_class('landing-body');
 
 echo $OUTPUT->header();
+
+$PAGE->set_pagelayout('incourse');
+$PAGE->set_blocks_editing_capability(false);
+$PAGE->set_secondary_navigation(false);
+$PAGE->set_show_course_index(false);
+$PAGE->set_title($quiz->name);
+$PAGE->set_heading($course->fullname);
+
+user_header_writer::write($session);
 
 foreach ($quba->get_slots() as $slot) {
     echo $quba->render_question($slot, $displayoptions);
 }
 
-echo html_writer::div(
-    html_writer::link(
+echo html_writer::start_div('d-flex flex-row w-100 justify-content-end');
+    echo html_writer::link(
         new moodle_url($PLUGIN_URL . '/exit.php'),
         'Exit and finish review',
         ['class' => 'btn btn-danger']
-    )
-);
+    );
+echo html_writer::end_div();
 
 echo $OUTPUT->footer();
