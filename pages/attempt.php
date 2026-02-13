@@ -99,68 +99,14 @@ echo html_writer::start_tag('form', [
     'method' => 'post',
     'action' => new moodle_url($PLUGIN_URL . '/process.php', ['token' => $token]),
 ]);
-    echo html_writer::start_div('modal fade', [
-        'id' => 'ptl-submit-modal',
-        'tabindex' => '-1',
-        'aria-hidden' => 'true',
-    ]);
-        echo html_writer::start_div('modal-dialog modal-dialog-centered');
-            echo html_writer::start_div('modal-content');
-                echo html_writer::div(
-                    html_writer::tag('h5', 'Submit attempt?', ['class' => 'modal-title']) .
-                    html_writer::tag('button', '', [
-                        'type' => 'button',
-                        'class' => 'btn-close',
-                        'data-bs-dismiss' => 'modal',
-                        'aria-label' => 'Close',
-                    ]),
-                    'modal-header'
-                );
-
-                echo html_writer::div(
-                    html_writer::tag(
-                        'p',
-                        'Once you submit, you will no longer be able to change your answers.'
-                    ),
-                    'modal-body'
-                );
-
-                echo html_writer::div(
-                    html_writer::tag('button', 'Cancel', [
-                        'type' => 'button',
-                        'class' => 'btn btn-secondary',
-                        'data-bs-dismiss' => 'modal',
-                    ]) .
-                    html_writer::tag('button', 'Yes, submit attempt', [
-                        'type'  => 'submit',
-                        'name'  => 'finishattempt',
-                        'value' => 'true',
-                        'class' => 'btn btn-primary ms-2',
-                    ]),
-                    'modal-footer'
-                );
-            echo html_writer::end_div(); // modal-content
-        echo html_writer::end_div(); // modal-dialog
-    echo html_writer::end_div(); // modal
-
-
     echo html_writer::start_div('publictestlink-attempt-wrapper');
-        $questionrenderer = $PAGE->get_renderer('core_question');
         foreach ($quba->get_slots() as $slot) {
             echo $quba->render_question($slot, $displayoptions);
         }
 
         echo html_writer::start_div('ptl-attempt-actions d-flex flex-row gap-2 w-full justify-content-end');
-            echo html_writer::tag('button', 'Save answers and don\'t submit', [
+            echo html_writer::tag('button', get_string('endtest', 'quiz'), [
                 'type'  => 'submit',
-                'name'  => 'finishattempt',
-                'value' => 'false',
-                'class' => 'btn btn-secondary',
-            ]);
-            echo html_writer::tag('button', 'Submit answers', [
-                'type'  => 'button',
-                'data-bs-toggle' => 'modal',
-                'data-bs-target' => '#ptl-submit-modal',
                 'class' => 'btn btn-primary',
             ]);
         echo html_writer::end_div();
