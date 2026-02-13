@@ -70,7 +70,7 @@ class publictestlink_link_token {
     }
 
     public static function require_token(string $token) {
-        $invalidtoken = new moodle_exception('invalidtoken', MODULE, '/');
+        $invalidtoken = new moodle_exception('accesserror_quiznotpublic', MODULE, '/');
 
         if (empty($token)) throw $invalidtoken;
 
