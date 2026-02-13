@@ -49,15 +49,7 @@ if ($isfinish) {
     question_engine::save_questions_usage_by_activity($quba);
     $attempt->mark_submitted($timenow);
 
-    redirect(
-        new moodle_url($PLUGIN_URL . '/review.php', ['token' => $token]),
-        null,
-        1000
-    );
+    redirect(new moodle_url($PLUGIN_URL . '/review.php', ['token' => $token]));
 }
 
-redirect(
-    new moodle_url($PLUGIN_URL . '/attempt.php', ['token' => $token]),
-    null,
-    1000
-);
+redirect(new moodle_url($PLUGIN_URL . '/summary.php', ['token' => $token]));

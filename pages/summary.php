@@ -89,6 +89,52 @@ echo $OUTPUT->header();
 
 user_header_writer::write($session);
 
+
+echo html_writer::start_div('modal fade', [
+    'id' => 'ptl-submit-modal',
+    'tabindex' => '-1',
+    'aria-hidden' => 'true',
+]);
+    echo html_writer::start_div('modal-dialog');
+        echo html_writer::start_div('modal-content');
+            echo html_writer::div(
+                html_writer::tag('h5', 'Submit attempt?', ['class' => 'modal-title']) .
+                html_writer::tag('button', '', [
+                    'type' => 'button',
+                    'class' => 'btn-close',
+                    'data-bs-dismiss' => 'modal',
+                    'aria-label' => 'Close',
+                ]),
+                'modal-header'
+            );
+
+            echo html_writer::div(
+                html_writer::tag(
+                    'p',
+                    'Once you submit, you will no longer be able to change your answers.'
+                ),
+                'modal-body'
+            );
+
+            echo html_writer::div(
+                html_writer::tag('button', 'Cancel', [
+                    'type' => 'button',
+                    'class' => 'btn btn-secondary',
+                    'data-bs-dismiss' => 'modal',
+                ]) .
+
+                html_writer::link(
+                    new moodle_url($PLUGIN_URL . '/process.php', ['token' => $token, 'finishattempt' => true]),
+                    get_string('submitallandfinish', 'quiz'),
+                    ['class' => 'btn btn-primary']
+                ),
+                'modal-footer'
+            );
+        echo html_writer::end_div(); // modal-content
+    echo html_writer::end_div(); // modal-dialog
+echo html_writer::end_div(); // modal
+
+
 echo html_writer::start_div('publictestlink-attempt-wrapper');
     // COPY PASTED FROM mod/quiz/classes/output/renderer.php, summary_table()
 
@@ -168,6 +214,20 @@ echo html_writer::start_div('publictestlink-attempt-wrapper');
     // Print the summary table.
     echo html_writer::table($table);
 
+    echo html_writer::start_div('d-flex mt-4 flex-column w-100 align-items-center gap-4');
+        echo html_writer::link(
+            new moodle_url($PLUGIN_URL . '/attempt.php', ['token' => $token]),
+            get_string('returnattempt', 'quiz'),
+            ['class' => 'btn btn-secondary']
+        );
+
+        echo html_writer::tag('button', get_string('submitallandfinish', 'quiz'), [
+            'type'  => 'button',
+            'data-bs-toggle' => 'modal',
+            'data-bs-target' => '#ptl-submit-modal',
+            'class' => 'btn btn-primary',
+        ]);
+    echo html_writer::end_div();
 echo html_writer::end_div();
 
 echo $OUTPUT->footer();
