@@ -78,12 +78,12 @@ foreach ($quba->get_slots() as $slot) {
     echo $quba->render_question($slot, $displayoptions);
 }
 
-echo html_writer::div(
-    html_writer::link(
+echo html_writer::start_div('d-flex flex-row w-100 justify-content-end');
+    echo html_writer::link(
         new moodle_url($PLUGIN_URL . '/exit.php'),
         'Exit and finish review',
         ['class' => 'btn btn-danger']
-    )
-);
+    );
+echo html_writer::end_div();
 
 echo $OUTPUT->footer();
