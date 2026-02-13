@@ -25,7 +25,7 @@ function local_publictestlink_coursemodule_standard_elements($formwrapper, $mfor
         return;
     }
 
-    $quizid = (int)$current->coursemodule;
+    $quizid = (int)$current->instance;
     $quizcustom = publictestlink_quizcustom::from_quizid($quizid);
     
     $ispublic = false;
@@ -136,7 +136,7 @@ function local_publictestlink_coursemodule_edit_post_actions($data) {
         return $data;
     }
     
-    $quizid = (int)$data->coursemodule;
+    $quizid = (int)$data->instance;
     
     // Get checkbox value
     $ispublic = (bool)optional_param('ispublic', 0, PARAM_INT);
