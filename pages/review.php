@@ -69,8 +69,16 @@ $displayoptions->feedback = question_display_options::VISIBLE;
 $displayoptions->rightanswer = question_display_options::VISIBLE;
 $displayoptions->history = question_display_options::VISIBLE;
 
+$PAGE->add_body_class('landing-body');
 
 echo $OUTPUT->header();
+
+$PAGE->set_pagelayout('incourse');
+$PAGE->set_blocks_editing_capability(false);
+$PAGE->set_secondary_navigation(false);
+$PAGE->set_show_course_index(false);
+$PAGE->set_title($quiz->name);
+$PAGE->set_heading($course->fullname);
 
 user_header_writer::write($session);
 
