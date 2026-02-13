@@ -145,7 +145,6 @@ echo html_writer::start_tag('form', [
 
 
     echo html_writer::start_div('publictestlink-attempt-wrapper');
-        $questionrenderer = $PAGE->get_renderer('core_question');
         foreach ($quba->get_slots() as $slot) {
             echo $quba->render_question($slot, $displayoptions);
         }
