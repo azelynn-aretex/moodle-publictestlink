@@ -42,6 +42,9 @@ $attempt = publictestlink_attempt::get_existing_attempt($quizid, $shadowuserid);
 if ($attempt !== null) {
     $quba = $attempt->get_quba();
 } else {
+    $cm = get_coursemodule_from_instance('quiz', $quizid, 0, false, MUST_EXIST);
+    $context = context_module::instance($cm->id);
+
     $quba = question_engine::make_questions_usage_by_activity($MODULE, $context);
     $quba->set_preferred_behaviour($quiz->preferredbehaviour);
 
