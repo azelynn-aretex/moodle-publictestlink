@@ -7,6 +7,7 @@ require_once('../classes/attempt.php');
 require_once('../classes/session.php');
 require_once('../classes/access_manager.php');
 require_once('../classes/link_token.php');
+require_once('../classes/user_header_writer.php');
 
 use core\url as moodle_url;
 use core\notification;
@@ -70,6 +71,8 @@ $displayoptions->history = question_display_options::VISIBLE;
 
 
 echo $OUTPUT->header();
+
+user_header_writer::write($session);
 
 foreach ($quba->get_slots() as $slot) {
     echo $quba->render_question($slot, $displayoptions);
