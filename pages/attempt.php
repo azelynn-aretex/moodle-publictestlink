@@ -100,8 +100,9 @@ echo html_writer::start_tag('form', [
     'action' => new moodle_url($PLUGIN_URL . '/process.php', ['token' => $token]),
 ]);
     echo html_writer::start_div('publictestlink-attempt-wrapper');
+        $i = 1;
         foreach ($quba->get_slots() as $slot) {
-            echo $quba->render_question($slot, $displayoptions);
+            echo $quba->render_question($slot, $displayoptions, $i++);
         }
 
         echo html_writer::start_div('ptl-attempt-actions d-flex flex-row gap-2 w-full justify-content-end');
