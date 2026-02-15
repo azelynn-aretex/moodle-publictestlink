@@ -14,6 +14,10 @@ use core\url as moodle_url;
  * @param moodleform_mod $formwrapper The moodleform_mod instance
  * @param MoodleQuickForm $mform The form instance
  */
+
+// Toggle: set to true to hide UI, false to show UI for all users
+$CFG->local_publictestlink_hide_ui = false;
+
 function local_publictestlink_coursemodule_standard_elements($formwrapper, $mform) {
     global $PAGE;
 
