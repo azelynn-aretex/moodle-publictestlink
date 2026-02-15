@@ -9,18 +9,24 @@
 
 require_once('../../../config.php');
 
+use core\exception\moodle_exception;
+use core\output\html_writer;
+use core\url as moodle_url;
+use core\output\url_select;
+use core_table\output\html_table;
+
 // Get quiz ID from URL parameter
 $cmid = required_param('id', PARAM_INT);
 
 // Get the course module and course information
 $cm = get_coursemodule_from_id('quiz', $cmid);
 if (!$cm) {
-    print_error('invalidcoursemodule');
+    throw new moodle_exception('invalidcoursemodule');
 }
 
 $course = get_course($cm->course);
 if (!$course) {
-    print_error('invalidcourseid');
+    throw new moodle_exception('invalidcourseid');
 }
 
 // Set up page context
@@ -44,7 +50,7 @@ $navoptions = [
 	(new moodle_url('/local/publictestlink/pages/public_grading.php', ['id' => $cmid]))->out(false) => 'Public Grading',
 ];
 
-$navselect = new \url_select(
+$navselect = new url_select(
 	$navoptions,
 	(new moodle_url('/local/publictestlink/pages/public_grading.php', ['id' => $cmid]))->out(false),
 	null,
