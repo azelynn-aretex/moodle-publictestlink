@@ -8,6 +8,7 @@
  */
 
 require_once('../../../config.php');
+require_once('../classes/quizcustom.php');
 
 use core\exception\moodle_exception;
 use core\output\html_writer;
@@ -27,6 +28,12 @@ if (!$cm) {
 $course = get_course($cm->course);
 if (!$course) {
     throw new moodle_exception('invalidcourseid');
+}
+
+$quizid = $cm->instance;
+$quizcustom = publictestlink_quizcustom::from_quizid($quizid);
+if ($quizcustom === null || !$quizcustom->get_ispublic()) {
+	redirect(new moodle_url('/mod/quiz/report.php', ['id' => $cmid, 'mode' => 'overview']));
 }
 
 // Set up page context
