@@ -24,13 +24,17 @@ class hook_callbacks {
                 document.addEventListener("DOMContentLoaded", function() {
                     var selects = document.querySelectorAll("select.urlselect");
                     if (selects.length > 0) {
+                        var publicGrading = document.createElement("option");
+                        publicGrading.value = "/local/publictestlink/pages/public_grading.php?id=' . $cmid . '";
+                        publicGrading.text = "Public Link: Grading";
+
                         var publicResponses = document.createElement("option");
                         publicResponses.value = "/local/publictestlink/pages/public_responses.php?id=' . $cmid . '";
-                        publicResponses.text = "Public Responses";
+                        publicResponses.text = "Public Link: Responses";
                         
                         selects.forEach(function(select) {
-                            select.appendChild(publicResponses.cloneNode(true));
                             select.appendChild(publicGrading.cloneNode(true));
+                            select.appendChild(publicResponses.cloneNode(true));
                         });
                     }
                 });
