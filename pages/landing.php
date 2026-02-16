@@ -15,21 +15,28 @@ use core\notification;
 use core\url as moodle_url;
 
 
+// Page query parameters
 $token = required_param('token', PARAM_ALPHANUMEXT);
 
+// Require a valid token
 $linktoken = publictestlink_link_token::require_token($token);
 
+/**
+ * Redirects to `start.php` to start the attempt.
+ */
 function redirect_to_start() {
-    global $PLUGIN_URL, $token;
-    redirect(new moodle_url($PLUGIN_URL . '/start.php', ['token' => $token]));
+    global $token;
+    redirect(new moodle_url(PLUGIN_URL . '/start.php', ['token' => $token]));
 }
 
+// Check if session is valid
 $session = publictestlink_session::check_session();
 if ($session !== null) {
     redirect_to_start();
     return;
 }
 
+// Initialize required variables
 $quizid = $linktoken->get_quizid();
 $quizobj = quiz_settings::create($quizid);
 $quiz = $quizobj->get_quiz();
@@ -38,6 +45,7 @@ $cm = get_coursemodule_from_id('quiz', $quizobj->get_cmid(), 0, false, MUST_EXIS
 $context = context_module::instance($cm->id);
 if (!$context) throw new moodle_exception('invalidcontext', $MODULE);
 
+// Check if public users can access the quiz
 $timenow = time();
 $accessmanager = new publictestlink_access_manager($quizobj, $timenow);
 $reasons = $accessmanager->get_formatted_reasons();
@@ -47,9 +55,10 @@ if ($reasons !== null) {
 }
 
 
+// Never cache the page
+$PAGE->set_cacheable(false);
 
 $PAGE->requires->css('/local/publictestlink/styles.css');
-$PAGE->set_cacheable(false);
 
 $PAGE->set_url(new moodle_url(PLUGIN_URL . '/landing.php', ['token' => $token]));
 $PAGE->requires->css('/local/publictestlink/styles.css');
@@ -64,6 +73,7 @@ $PAGE->set_course($quizobj->get_course());
 $PAGE->set_cm($cm);
 $PAGE->set_context($context);
 
+// Remove navbar
 $PAGE->navbar->ignore_active(true);
 foreach ($PAGE->navbar->get_items() as $node) {
     $node->action = null;
@@ -72,13 +82,18 @@ foreach ($PAGE->navbar->get_items() as $node) {
 $PAGE->set_title('Login');
 $PAGE->set_heading('Login as non-user');
 
+
+// Create the form
 $form = new local_publictestlink_non_user_login(
     null,
     ['token' => $token]
 );
 
+// When the form is submitted
 if ($data = $form->get_data()) {
     $shadowuser = publictestlink_shadow_user::from_email($data->email);
+
+    // If the user doesn't exist yet
     if ($shadowuser === null) {
         $shadowuser = publictestlink_shadow_user::create(
             $data->email, $data->firstname, $data->lastname
@@ -89,12 +104,14 @@ if ($data = $form->get_data()) {
         );
     }
 
+    // Then, log in the user.
     $session = publictestlink_session::login($shadowuser);
 
     redirect_to_start();
     return;
 }
 
+// Start writing the page
 echo $OUTPUT->header();
 $form->display();
 echo $OUTPUT->footer();
