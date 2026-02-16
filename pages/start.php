@@ -19,13 +19,16 @@ use core\notification;
 use mod_quiz\quiz_settings;
 
 
+// Reload every page access
 $PAGE->set_cacheable(false);
 
-
+// Page parameters
 $token = required_param('token', PARAM_ALPHANUMEXT);
 
+// Require a valid token
 $linktoken = publictestlink_link_token::require_token($token);
 
+// Require a valid session
 $session = publictestlink_session::check_session();
 if ($session === null) {
     redirect(new moodle_url($PLUGIN_URL . '/landing.php', ['token' => $token]));
@@ -37,8 +40,11 @@ $quizobj = quiz_settings::create($quizid);
 $quiz = $quizobj->get_quiz();
 
 $shadowuserid = $session->get_user()->get_id();
+
+// Get the latest existing in-progress attempt.
 $attempt = publictestlink_attempt::get_existing_attempt($quizid, $shadowuserid);
 
+// If there's an existing attempt, use that. Otherwise, create one.
 if ($attempt !== null) {
     $quba = $attempt->get_quba();
 } else {
@@ -64,6 +70,7 @@ if ($attempt !== null) {
 
 $timenow = time();
 
+// Check if user can access the quiz.
 $accessmanager = new publictestlink_access_manager($quizobj, $timenow, $session->get_user(), $attempt);
 $reasons = $accessmanager->get_formatted_reasons();
 if ($reasons !== null) {
