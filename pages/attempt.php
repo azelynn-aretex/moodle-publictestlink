@@ -17,18 +17,23 @@ use mod_quiz\quiz_settings;
 /** @var moodle_page $PAGE */
 
 
+// Always reload when accessing page, never cache
 $PAGE->set_cacheable(false);
 
+// Page query parameters
 $token = required_param('token', PARAM_ALPHANUMEXT);
 
+// Require that the token is valid.
 $linktoken = publictestlink_link_token::require_token($token);
 
+// Check if session is valid.
 $session = publictestlink_session::check_session();
 if ($session === null) {
     redirect(new moodle_url($PLUGIN_URL . '/landing.php', ['token' => $token]));
     return;
 }
 
+// Get relevant information
 $quizid = $linktoken->get_quizid();
 $quizobj = quiz_settings::create($quizid);
 $quiz = $quizobj->get_quiz();
@@ -40,9 +45,9 @@ if (!$context) throw new moodle_exception('invalidcontext', $MODULE);
 $shadowuserid = $session->get_user()->get_id();
 $attempt = publictestlink_attempt::require_attempt($quizid, $shadowuserid);
 
+// Check if the user can access this quiz
 $timenow = time();
 $accessmanager = new publictestlink_access_manager($quizobj, $timenow, $session->get_user(), $attempt);
-
 
 $reasons = $accessmanager->get_formatted_reasons();
 if ($reasons !== null) {
@@ -54,12 +59,11 @@ if (
     $attempt->get_shadow_user()->get_id() !== $session->get_user()->get_id() ||
     !$attempt->is_in_progress()
 ) {
-    redirect(
-        new moodle_url($PLUGIN_URL . '/landing.php', ['token' => $token])
-    );
+    redirect(new moodle_url($PLUGIN_URL . '/landing.php', ['token' => $token]));
     return;
 }
 
+// Get the time limit
 $endtime = null;
 $timeleft = null;
 if ($quiz->timelimit > 0) {
@@ -71,16 +75,8 @@ $quba = $attempt->get_quba();
 $quba->set_preferred_behaviour($quiz->preferredbehaviour);
 
 
-$PAGE->requires->js_init_code("
-    if (!window.M) { window.M = {}; }
-    if (!M.cfg) { M.cfg = {}; }
-    M.cfg.quiz = {
-        timeleft: {$timeleft},
-        endtime: {$endtime},
-        timerwarning: 60
-    };
-");
 
+// Start writing the page
 
 $PAGE->set_url($PLUGIN_URL . '/attempt.php', ['token' => $token]);
 $PAGE->requires->css('/local/publictestlink/styles.css');
@@ -97,6 +93,7 @@ $PAGE->set_course($quizobj->get_course());
 $PAGE->set_cm($cm);
 $PAGE->set_context($context);
 
+// Disable navbar
 $PAGE->navbar->ignore_active(true);
 foreach ($PAGE->navbar->get_items() as $node) {
     $node->action = null;
@@ -112,6 +109,7 @@ $displayoptions->flags = question_display_options::HIDDEN; // TODO add flags
 
 echo $OUTPUT->header();
 
+// If there is a time limit
 if ($timeleft !== null) {
     function format_time_left(int $seconds): string {
         $minutes = intdiv($seconds, 60);
@@ -119,6 +117,7 @@ if ($timeleft !== null) {
         return sprintf('%d:%02d', $minutes, $seconds);
     }
 
+    // Write the HTML for the time limit
     echo html_writer::start_div('mb-2', ['id' => 'quiz-timer-wrapper', 'style' => 'display: flex;']);
         echo html_writer::start_div('quiz-timer-inner py-1 px-2 ms-auto', ['id' => 'quiz-timer', 'role' => 'timer']);
             echo 'Time left: ';
@@ -126,6 +125,7 @@ if ($timeleft !== null) {
         echo html_writer::end_div();
     echo html_writer::end_div();
 
+    // Run JS code to run every second
     $PAGE->requires->js_init_code(<<<JS
         (function() {
             const el = document.getElementById('quiz-time-left');
@@ -154,19 +154,22 @@ if ($timeleft !== null) {
     JS);
 }
 
+// Write the logged in header
 user_header_writer::write($session);
 
+// Write the form
 echo html_writer::start_tag('form', [
     'method' => 'post',
     'id'     => 'responseform',
     'action' => new moodle_url($PLUGIN_URL . '/process.php', ['token' => $token]),
 ]);
     echo html_writer::start_div('publictestlink-attempt-wrapper');
-        $i = 1;
+        // Write all questions
         foreach ($quba->get_slots() as $slot) {
-            echo $quba->render_question($slot, $displayoptions, $i++);
+            echo $quba->render_question($slot, $displayoptions, $slot);
         }
 
+        // Write the submit button
         echo html_writer::start_div('ptl-attempt-actions d-flex flex-row gap-2 w-full justify-content-end');
             echo html_writer::tag('button', get_string('endtest', 'quiz'), [
                 'type'  => 'submit',
@@ -175,4 +178,5 @@ echo html_writer::start_tag('form', [
         echo html_writer::end_div();
     echo html_writer::end_div();
 echo html_writer::end_tag('form');
+
 echo $OUTPUT->footer();
