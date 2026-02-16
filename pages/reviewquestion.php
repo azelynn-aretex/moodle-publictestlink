@@ -47,7 +47,7 @@ $summary->add_item('quizname',
 $question = $quba->get_question($slot);
 
 $summary->add_item('questionname',
-    get_string('modulename', 'quiz'),
+    get_string('questionname', 'quiz'),
     $question->name
 );
 
