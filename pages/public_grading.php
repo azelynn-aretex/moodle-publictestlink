@@ -9,12 +9,15 @@
 
 require_once('../../../config.php');
 require_once('../classes/quizcustom.php');
+require_once('../classes/attempt.php');
 
 use core\exception\moodle_exception;
 use core\output\html_writer;
 use core\url as moodle_url;
 use core\output\url_select;
+use core_table\flexible_table;
 use core_table\output\html_table;
+use mod_quiz\quiz_settings;
 
 // Get quiz ID from URL parameter
 $cmid = required_param('id', PARAM_INT);
@@ -35,6 +38,11 @@ $quizcustom = publictestlink_quizcustom::from_quizid($quizid);
 if ($quizcustom === null || !$quizcustom->get_ispublic()) {
 	redirect(new moodle_url('/mod/quiz/report.php', ['id' => $cmid, 'mode' => 'overview']));
 }
+$quizobj = quiz_settings::create($quizid);
+$quiz = $quizobj->get_quiz();
+
+
+$attempts = publictestlink_attempt::get_all_attempts($quizid);
 
 // Set up page context
 $PAGE->set_cm($cm, $course);
@@ -69,19 +77,110 @@ $navselect->class = 'urlselect mb-3';
 echo $OUTPUT->render($navselect);
 
 // Create table with quiz grading columns
-$table = new html_table();
-$table->attributes['class'] = 'generaltable';
-$table->head = array('Email', 'First name', 'Last name', 'Status', 'Started', 'Completed', 'Duration', 'Grade');
+// $table = new html_table();
+// $table->attributes['class'] = 'generaltable';
+// $table->head = array('Email', 'First name', 'Last name', 'Status', 'Started', 'Completed', 'Duration', 'Grade');
 
-// Sample rows for visual purposes (customize with actual quiz data as needed)
-$rows = array();
-$rows[] = array('shadow1@example.com', 'Shadow', 'One', 'Completed', '2026-02-10 09:00', '2026-02-10 09:20', '00:20', '85%');
-$rows[] = array('shadow2@example.com', 'Shadow', 'Two', 'Completed', '2026-02-09 14:10', '2026-02-09 14:30', '00:20', '92%');
-$rows[] = array('shadow3@example.com', 'Shadow', 'Three', 'In progress', '2026-02-10 10:05', '-', '-', 'graded');
+// // Sample rows for visual purposes (customize with actual quiz data as needed)
+// $rows = array();
+// $rows[] = array('shadow1@example.com', 'Shadow', 'One', 'Completed', '2026-02-10 09:00', '2026-02-10 09:20', '00:20', '85%');
+// $rows[] = array('shadow2@example.com', 'Shadow', 'Two', 'Completed', '2026-02-09 14:10', '2026-02-09 14:30', '00:20', '92%');
+// $rows[] = array('shadow3@example.com', 'Shadow', 'Three', 'In progress', '2026-02-10 10:05', '-', '-', 'graded');
 
-$table->data = $rows;
+// $table->data = $rows;
 
-echo html_writer::tag('h3', 'Quiz Results');
-echo html_writer::table($table);
+// echo html_writer::tag('h3', 'Quiz Results');
+// echo html_writer::table($table);
+
+$table = new flexible_table('publictestlink-responses');
+
+$slots = $quizobj->get_structure()->get_slots();
+
+$max_mark = number_format((float)$quiz->grade, 2);
+
+$question_columns = [];
+$question_headers = [];
+$i = 1;
+foreach ($slots as $slotnum => $slotdata) {
+	$slot = $slotdata->slot;
+	$question_columns[] = "q$slot";
+
+	$slot_max_mark = number_format($slotdata->maxmark, 2);
+	$question_headers[] = "Q. $i /$slot_max_mark";
+
+	$i++;
+}
+
+$table->define_columns([
+    'fullname',
+    'email',
+    'status',
+    'timestart',
+    'timefinish',
+    'duration',
+    'sumgrades',
+    ...$question_columns
+]);
+
+$table->define_headers([
+    'First name / Last name',
+    'Email address',
+    'Status',
+    'Started',
+    'Completed',
+    'Duration',
+    "Grade/$max_mark",
+    ...$question_headers
+]);
+
+$table->define_baseurl($PAGE->url);
+$table->sortable(false);
+$table->pageable(false);
+$table->collapsible(false);
+
+$table->setup();
+
+
+foreach ($attempts as $attempt) {
+	$attemptlink = new moodle_url(PLUGIN_URL . '/reviewteacher.php', ['attemptid' => $attempt->get_id()]);
+	$shadowuser = $attempt->get_shadow_user();
+	$quba = $attempt->get_quba();
+    $row = [];
+    
+    $row['checkbox'] = html_writer::checkbox('attemptid[]', $attempt->get_id(), false);
+    
+	$fullname = "{$shadowuser->get_firstname()} {$shadowuser->get_lastname()}";
+    $row['fullname'] = html_writer::tag('p',
+		html_writer::link($attemptlink, $fullname, ['class' => 'font-weight-bold']) . '<br>' .
+		html_writer::link($attemptlink, get_string('reviewattempt', 'quiz'))
+	);
+    $row['email'] = $shadowuser->get_email();
+    $row['status'] = $attempt->get_state_readable();
+    
+    $row['timestart'] = userdate($attempt->get_timestart());
+
+	if (!$attempt->is_in_progress()) {
+		$row['timefinish'] = userdate($attempt->get_timeend());
+		$row['duration'] = format_time($attempt->get_timeend() - $attempt->get_timestart());
+	}
+    
+    $row['sumgrades'] = html_writer::link($attemptlink, number_format($attempt->get_scaled_grade(), 2), ['class' => 'font-weight-bold']);
+
+    foreach ($quba->get_slots() as $slot) {
+        $slot_grade = $quba->get_question_mark($slot);
+		if ($slot_grade === null) continue;
+        
+        $icon = ($slot_grade > 0) ? 'i/grade_correct' : 'i/grade_incorrect';
+        $class = ($slot_grade > 0) ? 'text-success' : 'text-danger';
+        
+        $icon_html = $OUTPUT->pix_icon($icon, '', 'moodle', ['class' => 'resourcelinkicon']);
+        $row["q$slot"] = html_writer::div($icon_html . ' ' . number_format((float)$slot_grade, 2), $class);
+    }
+
+    $table->add_data_keyed($row);
+}
+
+
+$table->finish_output();
 
 echo $OUTPUT->footer();
