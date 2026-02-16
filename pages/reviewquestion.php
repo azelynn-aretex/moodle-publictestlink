@@ -11,7 +11,7 @@ require_once('../locallib.php');
 require_once('../classes/attempt.php');
 
 
-
+// Page parameters
 $attemptid = required_param('attemptid', PARAM_INT);
 $slot = required_param('slot', PARAM_INT);
 

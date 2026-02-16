@@ -16,6 +16,8 @@ $string['form_email'] = 'Email Address';
 $string['form_firstname'] = 'First Name';
 $string['form_lastname'] = 'Last Name';
 
+$string['resultsin'] = 'The results are in!';
+
 $string['accesserror_quiznotpublic'] = 'Cannot access quiz.';
 $string['accesserror_quiznotopen'] = 'Quiz is not open for attempts yet';
 $string['accesserror_quizclosed'] = 'Quiz is closed';

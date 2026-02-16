@@ -53,18 +53,25 @@ $quba->set_preferred_behaviour($quiz->preferredbehaviour);
 
 // Start writing page
 $PAGE->set_url($PLUGIN_URL . '/review.php', ['token' => $token]);
-$PAGE->set_pagelayout('standard');
-$PAGE->set_title('Review');
-$PAGE->set_heading('The results are in!');
+$PAGE->add_body_class('landing-body');
 
 $PAGE->set_pagelayout('incourse');
+$PAGE->set_title('Review');
+
 $PAGE->set_blocks_editing_capability(false);
 $PAGE->set_secondary_navigation(false);
 $PAGE->set_show_course_index(false);
-$PAGE->set_title($quiz->name);
-$PAGE->set_heading($course->fullname);
 
-$PAGE->add_body_class('landing-body');
+$PAGE->set_course($quizobj->get_course());
+$PAGE->set_cm($quizobj->get_cm());
+$PAGE->set_context($context);
+
+// Disable navbar
+$PAGE->navbar->ignore_active(true);
+foreach ($PAGE->navbar->get_items() as $node) {
+    $node->action = null;
+}
+
 
 $displayoptions = new question_display_options();
 $displayoptions->readonly = true;
@@ -77,6 +84,10 @@ $displayoptions->history = question_display_options::VISIBLE;
 echo $OUTPUT->header();
 
 user_header_writer::write($session);
+
+echo html_writer::start_div('d-flex mb-3 flex-row w-100 justify-content-center');
+    echo html_writer::tag('h1', get_string('resultsin', MODULE));
+echo html_writer::end_div();
 
 // Render all questions
 foreach ($quba->get_slots() as $slot) {
