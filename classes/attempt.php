@@ -70,6 +70,7 @@ class publictestlink_attempt {
      * @param int $quizid The quiz ID.
      * @param int $shadowuserid The shadow user's ID.
      * @param string $state The state of the attempts to search for.
+     * @return ?self The attempt, or `null` if none exists.
      */
     public static function get_existing_attempt(int $quizid, int $shadowuserid, string $state = self::IN_PROGRESS): ?self {
         global $DB;
@@ -109,6 +110,8 @@ class publictestlink_attempt {
      * @param int $quizid The quiz ID.
      * @param int $shadowuserid The shadow user's ID.
      * @param string $state The state of the attempts to search for.
+     * @return self The attempt.
+     * @throws moodle_exception Thrown if there is no attempt.
      */
     public static function require_attempt(int $quizid, int $shadowuserid, string $state = self::IN_PROGRESS): self {
         $attempt = self::get_existing_attempt($quizid, $shadowuserid, $state);
@@ -139,6 +142,7 @@ class publictestlink_attempt {
      * 
      * @param int $id The attempt ID.
      * @return self The attempt.
+     * @throws dml_missing_record_exception Thrown when the attempt doesn't exist.
      */
     public static function from_id(int $id) {
         global $DB;
