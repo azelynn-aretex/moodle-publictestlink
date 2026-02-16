@@ -5,6 +5,7 @@ use core\output\html_writer;
 use core\url as moodle_url;
 use mod_quiz\quiz_settings;
 use context;
+use mod_quiz\output\attempt_summary_information;
 
 require_once('../../../config.php');
 require_once('../locallib.php');
@@ -22,12 +23,14 @@ $cm = get_coursemodule_from_id('quiz', $quizobj->get_cmid(), 0, false, MUST_EXIS
 $context = context_module::instance($cm->id);
 if (!$context) throw new moodle_exception('invalidcontext', $MODULE);
 
-$quba = $attempt->get_quba();
-$quba->set_preferred_behaviour($quiz->preferredbehaviour);
+$shadowuser = $attempt->get_shadow_user();
 
 require_login($quizobj->get_course(), false, $cm);
 /** @var context $context */
 require_capability('mod/quiz:viewreports', $context);
+
+$quba = $attempt->get_quba();
+$quba->set_preferred_behaviour($quiz->preferredbehaviour);
 
 
 
@@ -56,64 +59,51 @@ $displayoptions->history = question_display_options::VISIBLE;
 echo $OUTPUT->header();
 
 
-echo html_writer::start_div('quizattemptsummary mb-4');
-    echo html_writer::start_tag('table', ['class' => 'table generaltable generalbox quizreviewsummary']);
-        echo html_writer::start_tag('tbody');
-            $shadowuser = $attempt->get_shadow_user();
+$summary = new attempt_summary_information();
+$summary->add_item('respondent',
+    get_string('respondent', $MODULE),
+    "{$shadowuser->get_firstname()} {$shadowuser->get_lastname()} ({$shadowuser->get_email()})"
+);
 
-            echo html_writer::tag('tr',
-                html_writer::tag('th', get_string('respondent', $MODULE), ['class' => 'cell']) .
-                html_writer::tag('td',
-                    "{$shadowuser->get_firstname()} {$shadowuser->get_lastname()} ({$shadowuser->get_email()})",
-                    ['class' => 'cell']
-                )
-            );
+$summary->add_item('attempt_state',
+    get_string('attempt_state', MODULE),
+    $attempt->get_state_readable()
+);
 
-            echo html_writer::tag('tr',
-                html_writer::tag('th', get_string('attempt_state', $MODULE), ['class' => 'cell']) .
-                html_writer::tag('td', $attempt->get_state_readable(), ['class' => 'cell'])
-            );
+$summary->add_item('started_on',
+    get_string('started_on', MODULE),
+    userdate($attempt->get_timestart())
+);
 
-            echo html_writer::tag('tr',
-                html_writer::tag('th', get_string('started_on', $MODULE), ['class' => 'cell']) .
-                html_writer::tag('td', userdate($attempt->get_timestart()), ['class' => 'cell'])
-            );
+if (!$attempt->is_in_progress()) {
+    $summary->add_item('completed_on',
+        get_string('completed_on', MODULE),
+        userdate($attempt->get_timeend())
+    );
 
-            if (!$attempt->is_in_progress()) {
-                echo html_writer::tag('tr',
-                    html_writer::tag('th', get_string('completed_on', $MODULE), ['class' => 'cell']) .
-                    html_writer::tag('td', userdate($attempt->get_timeend()), ['class' => 'cell'])
-                );
+    $summary->add_item('duration',
+        get_string('duration', MODULE),
+        format_time($attempt->get_timeend() - $attempt->get_timestart())
+    );
 
-                echo html_writer::tag('tr',
-                    html_writer::tag('th', get_string('duration', $MODULE), ['class' => 'cell']) .
-                    html_writer::tag('td', format_time($attempt->get_timeend() - $attempt->get_timestart()), ['class' => 'cell'])
-                );
+    $summary->add_item('marks',
+        get_string('marks', MODULE),
+        format_float($attempt->get_total_mark(), 2) . '/' . format_float($attempt->get_max_mark(), 2)
+    );
 
-                echo html_writer::tag('tr',
-                    html_writer::tag('th', get_string('marks', $MODULE), ['class' => 'cell']) .
-                    html_writer::tag('td',
-                        format_float($attempt->get_total_mark(), 2) . '/' . format_float($attempt->get_max_mark(), 2),
-                        ['class' => 'cell']
-                    )
-                );
+    $summary->add_item('grade',
+        get_string('grade', MODULE),
+        get_string(
+            'outof',
+            'quiz', (object)[
+                'grade'    => html_writer::tag('b', quiz_format_grade($attempt->get_quizobj()->get_quiz(), $attempt->get_scaled_grade())),
+                'maxgrade' => quiz_format_grade($attempt->get_quizobj()->get_quiz(), $attempt->get_max_grade()),
+            ]
+        ) . ' (' . html_writer::tag('b', format_float($attempt->get_percentage() * 100, 0)) . '%)',
+    );
+}
 
-                echo html_writer::tag('tr',
-                    html_writer::tag('th', get_string('grade', $MODULE), ['class' => 'cell']) .
-                    html_writer::tag('td',
-                        get_string('outof', 'quiz', (object)[
-                            'grade'    => html_writer::tag('b', quiz_format_grade($attempt->get_quizobj()->get_quiz(), $attempt->get_scaled_grade())),
-                            'maxgrade' => quiz_format_grade($attempt->get_quizobj()->get_quiz(), $attempt->get_max_grade()),
-                        ]) .
-                        ' (' . html_writer::tag('b', format_float($attempt->get_percentage() * 100, 0)) . '%)',
-                        ['class' => 'cell']
-                    )
-                );
-            }
-
-        echo html_writer::end_tag('tbody');
-    echo html_writer::end_tag('table');
-echo html_writer::end_div();
+echo html_writer::div($OUTPUT->render($summary), 'mb-3');
 
 
 
@@ -124,9 +114,8 @@ foreach ($quba->get_slots() as $slot) {
 
 echo html_writer::div(
     html_writer::link(
-        new moodle_url('/mod/quiz/report.php', [
-            'id'     => $cm->id,
-            'mode'   => 'overview', // default attempts list
+        new moodle_url('/mod/quiz/view.php', [
+            'id'     => $cm->id, // default attempts list
         ]),
         'Finish review'
     ),

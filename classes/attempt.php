@@ -1,6 +1,7 @@
 <?php
 
 require_once('../../../config.php');
+require_once('../locallib.php');
 require_once($CFG->libdir . '/questionlib.php');
 require_once(__DIR__ . '/shadow_user.php');
 
@@ -117,6 +118,22 @@ class publictestlink_attempt {
         );
     }
 
+    public static function get_all_attempts(int $quizid) {
+        global $DB;
+        /** @var moodle_database $DB */
+
+        $records = $DB->get_records('local_publictestlink_quizattempt', ['quizid' => $quizid], 'timestart ASC', '*');
+        return array_map(fn ($record) => new self(
+            $record->id,
+            $record->shadowuserid,
+            $record->questionusageid,
+            $record->quizid,
+            $record->state,
+            $record->timestart,
+            $record->timeend
+        ), $records);
+    }
+
     public function get_id(): int {
         return $this->id;
     }
@@ -145,8 +162,8 @@ class publictestlink_attempt {
         global $MODULE;
 
         $map = [
-            self::IN_PROGRESS => get_string('attempt_state_inprogress', $MODULE),
-            self::SUBMITTED => get_string('attempt_state_submitted', $MODULE)
+            self::IN_PROGRESS => get_string('attempt_state_inprogress', MODULE),
+            self::SUBMITTED => get_string('attempt_state_submitted', MODULE)
         ];
 
         return $map[$this->state];
