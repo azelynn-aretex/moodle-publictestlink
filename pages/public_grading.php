@@ -16,7 +16,6 @@ use core\output\html_writer;
 use core\url as moodle_url;
 use core\output\url_select;
 use core_table\flexible_table;
-use core_table\output\html_table;
 use mod_quiz\quiz_settings;
 
 // Get quiz ID from URL parameter
@@ -76,21 +75,7 @@ $navselect->class = 'urlselect mb-3';
 
 echo $OUTPUT->render($navselect);
 
-// Create table with quiz grading columns
-// $table = new html_table();
-// $table->attributes['class'] = 'generaltable';
-// $table->head = array('Email', 'First name', 'Last name', 'Status', 'Started', 'Completed', 'Duration', 'Grade');
 
-// // Sample rows for visual purposes (customize with actual quiz data as needed)
-// $rows = array();
-// $rows[] = array('shadow1@example.com', 'Shadow', 'One', 'Completed', '2026-02-10 09:00', '2026-02-10 09:20', '00:20', '85%');
-// $rows[] = array('shadow2@example.com', 'Shadow', 'Two', 'Completed', '2026-02-09 14:10', '2026-02-09 14:30', '00:20', '92%');
-// $rows[] = array('shadow3@example.com', 'Shadow', 'Three', 'In progress', '2026-02-10 10:05', '-', '-', 'graded');
-
-// $table->data = $rows;
-
-// echo html_writer::tag('h3', 'Quiz Results');
-// echo html_writer::table($table);
 
 $table = new flexible_table('publictestlink-responses');
 
@@ -170,8 +155,18 @@ foreach ($attempts as $attempt) {
         $slot_grade = $quba->get_question_mark($slot);
 		if ($slot_grade === null) continue;
         
-        $icon = ($slot_grade > 0) ? 'i/grade_correct' : 'i/grade_incorrect';
-        $class = ($slot_grade > 0) ? 'text-success' : 'text-danger';
+        $fraction = $quba->get_question_fraction($slot);
+	
+		if ($fraction >= 0.99) {
+			$icon = 'i/grade_correct';
+			$class = 'text-success';
+		} else if ($fraction > 0) {
+			$icon = 'i/grade_partiallycorrect';
+			$class = 'text-success';
+		} else {
+			$icon = 'i/grade_incorrect';
+			$class = 'text-danger';
+		}
         
         $icon_html = $OUTPUT->pix_icon($icon, '', 'moodle', ['class' => 'resourcelinkicon']);
         $row["q$slot"] = html_writer::div($icon_html . ' ' . number_format((float)$slot_grade, 2), $class);
