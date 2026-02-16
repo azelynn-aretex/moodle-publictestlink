@@ -1,7 +1,7 @@
 <?php
 defined('MOODLE_INTERNAL') || die();
 
-require_once('../locallib.php');
+require_once(__DIR__ . '/../locallib.php');
 require_once($CFG->libdir . '/formslib.php');
 
 class local_publictestlink_non_user_login extends moodleform {
