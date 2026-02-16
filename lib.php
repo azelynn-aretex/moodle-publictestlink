@@ -14,8 +14,6 @@ use core\url as moodle_url;
  * @param moodleform_mod $formwrapper The moodleform_mod instance
  * @param MoodleQuickForm $mform The form instance
  */
-
-
 function local_publictestlink_coursemodule_standard_elements($formwrapper, $mform) {
     global $PAGE;
 
@@ -170,21 +168,3 @@ function local_publictestlink_coursemodule_edit_post_actions($data) {
 
     return $data;
 }
-
-// /**
-//  * Delete public quiz records when a quiz is deleted.
-//  *
-//  * @param cm_info $cm The course module object
-//  */
-// function local_publictestlink_pre_course_module_delete($cm) {
-//     if ($cm->modname !== 'quiz') {
-//         return;
-//     }
-
-//     echo 'test';
-
-//     $quizcustom = publictestlink_quizcustom::from_quizid($cm->id);
-//     if ($quizcustom === null) return;
-
-//     $quizcustom->delete();
-// }
