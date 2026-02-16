@@ -27,9 +27,15 @@ $quiz = $quizobj->get_quiz();
 
 $attempt = publictestlink_attempt::require_attempt($quizid, $session->get_user()->get_id());
 
-// Shadow-user ownership check
 if ($attempt->get_shadow_user()->get_id() !== $session->get_user()->get_id()) {
     redirect(new moodle_url($PLUGIN_URL . '/landing.php', ['token' => $token]));
+}
+
+$endtime = null;
+$timeleft = null;
+if ($quiz->timelimit > 0) {
+    $endtime = $attempt->get_timestart() + $quiz->timelimit;
+    $timeleft = max(0, $endtime - $timenow);
 }
 
 $quba = $attempt->get_quba();
@@ -44,12 +50,24 @@ $quba->process_all_actions(
 
 question_engine::save_questions_usage_by_activity($quba);
 
-if ($isfinish) {
+
+function submit() {
+    global $quba, $timenow, $attempt, $token;
+
     $quba->finish_all_questions($timenow);
     question_engine::save_questions_usage_by_activity($quba);
     $attempt->mark_submitted($timenow);
 
-    redirect(new moodle_url($PLUGIN_URL . '/review.php', ['token' => $token]));
+    redirect(new moodle_url(PLUGIN_URL . '/review.php', ['token' => $token]));
 }
+
+if ($timeleft !== null && $timeleft <= 0) {
+    $overduehandle = $quiz->overduehandling;
+
+    // if ($overduehandle === 'autosubmit') {
+    submit();
+}
+
+if ($isfinish) submit();
 
 redirect(new moodle_url($PLUGIN_URL . '/summary.php', ['token' => $token]));
