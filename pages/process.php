@@ -31,6 +31,8 @@ if ($attempt->get_shadow_user()->get_id() !== $session->get_user()->get_id()) {
     redirect(new moodle_url($PLUGIN_URL . '/landing.php', ['token' => $token]));
 }
 
+$timenow = time();
+
 $endtime = null;
 $timeleft = null;
 if ($quiz->timelimit > 0) {
