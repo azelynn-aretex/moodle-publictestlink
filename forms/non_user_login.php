@@ -4,6 +4,9 @@ defined('MOODLE_INTERNAL') || die();
 require_once(__DIR__ . '/../locallib.php');
 require_once($CFG->libdir . '/formslib.php');
 
+/**
+ * The form for logging in as a non-user.
+ */
 class local_publictestlink_non_user_login extends moodleform {
 
     public function definition() {
