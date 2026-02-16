@@ -42,6 +42,8 @@ $attempt = publictestlink_attempt::require_attempt($quizid, $shadowuserid);
 
 $timenow = time();
 $accessmanager = new publictestlink_access_manager($quizobj, $timenow, $session->get_user(), $attempt);
+
+
 $reasons = $accessmanager->get_formatted_reasons();
 if ($reasons !== null) {
     redirect('/', $reasons, null, notification::ERROR);
@@ -58,9 +60,26 @@ if (
     return;
 }
 
+$endtime = null;
+$timeleft = null;
+if ($quiz->timelimit > 0) {
+    $endtime = $attempt->get_timestart() + $quiz->timelimit;
+    $timeleft = max(0, $endtime - $timenow);
+}
+
 $quba = $attempt->get_quba();
 $quba->set_preferred_behaviour($quiz->preferredbehaviour);
 
+
+$PAGE->requires->js_init_code("
+    if (!window.M) { window.M = {}; }
+    if (!M.cfg) { M.cfg = {}; }
+    M.cfg.quiz = {
+        timeleft: {$timeleft},
+        endtime: {$endtime},
+        timerwarning: 60
+    };
+");
 
 
 $PAGE->set_url($PLUGIN_URL . '/attempt.php', ['token' => $token]);
@@ -93,10 +112,55 @@ $displayoptions->flags = question_display_options::HIDDEN; // TODO add flags
 
 echo $OUTPUT->header();
 
+if ($timeleft !== null) {
+    function format_time_left(int $seconds): string {
+        $minutes = intdiv($seconds, 60);
+        $seconds = $seconds % 60;
+        return sprintf('%d:%02d', $minutes, $seconds);
+    }
+
+    echo html_writer::div(
+        html_writer::span(get_string('timeleft', 'quiz'), 'timer-label') .
+        html_writer::span(format_time_left($timeleft), 'timer-value', [
+            'id' => 'quiz-timer',
+            'data-endtime' => $endtime
+        ]),
+        'quiz-timer-wrapper'
+    );
+
+    $PAGE->requires->js_init_code(<<<JS
+        (function() {
+            const el = document.getElementById('quiz-timer');
+            if (!el) return;
+
+            const end = parseInt($endtime, 10) * 1000;
+
+            let timer = null;
+
+            function tick() {
+                const now = Date.now();
+                let s = Math.max(0, Math.floor((end - now) / 1000));
+                const m = Math.floor(s / 60);
+                const r = s % 60;
+                el.textContent = m + ':' + String(r).padStart(2, '0');
+
+                if (s <= 0) {
+                    clearInterval(timer);
+                    document.getElementById('responseform')?.submit();
+                }
+            }
+
+            tick();
+            timer = setInterval(tick, 1000);
+        })();
+    JS);
+}
+
 user_header_writer::write($session);
 
 echo html_writer::start_tag('form', [
     'method' => 'post',
+    'id'     => 'responseform',
     'action' => new moodle_url($PLUGIN_URL . '/process.php', ['token' => $token]),
 ]);
     echo html_writer::start_div('publictestlink-attempt-wrapper');
