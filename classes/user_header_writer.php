@@ -5,7 +5,14 @@ use core\url as moodle_url;
 
 require_once(__DIR__ . '/session.php');
 
+/**
+ * The header writer for the quiz flow.
+ */
 class user_header_writer {
+    /**
+     * Writes HTML of the currently logged in user on the current position.
+     * @param publictestlink_session $session The current session.
+     */
     public static function write(publictestlink_session $session) {
         $shadowuser = $session->get_user();
 
