@@ -13,6 +13,7 @@ require_once('../classes/attempt.php');
 
 
 
+// Page parameters
 $attemptid = required_param('attemptid', PARAM_INT);
 
 $attempt = publictestlink_attempt::from_id($attemptid);
@@ -25,6 +26,7 @@ if (!$context) throw new moodle_exception('invalidcontext', $MODULE);
 
 $shadowuser = $attempt->get_shadow_user();
 
+// Require logging in
 require_login($quizobj->get_course(), false, $cm);
 /** @var context $context */
 require_capability('mod/quiz:viewreports', $context);
@@ -34,6 +36,7 @@ $quba->set_preferred_behaviour($quiz->preferredbehaviour);
 
 
 
+// Start writing page
 $PAGE->set_url($PLUGIN_URL . '/reviewteacher.php', ['attemptid' => $attemptid]);
 $PAGE->set_pagelayout('incourse');
 $PAGE->set_title('Review');
@@ -59,6 +62,7 @@ $displayoptions->history = question_display_options::VISIBLE;
 echo $OUTPUT->header();
 
 
+// Summary table
 $summary = new attempt_summary_information();
 $summary->add_item('respondent',
     get_string('respondent', $MODULE),
@@ -75,6 +79,7 @@ $summary->add_item('started_on',
     userdate($attempt->get_timestart())
 );
 
+// Extra fields for finished attempts
 if (!$attempt->is_in_progress()) {
     $summary->add_item('completed_on',
         get_string('completed_on', MODULE),
@@ -105,20 +110,15 @@ if (!$attempt->is_in_progress()) {
 
 echo html_writer::div($OUTPUT->render($summary), 'mb-3');
 
-
-
+// Render all questions
 foreach ($quba->get_slots() as $slot) {
     echo $quba->render_question($slot, $displayoptions, $slot);
 }
 
 
+// Finish review link
 echo html_writer::div(
-    html_writer::link(
-        new moodle_url('/mod/quiz/view.php', [
-            'id'     => $cm->id, // default attempts list
-        ]),
-        'Finish review'
-    ),
+    html_writer::link(new moodle_url('/mod/quiz/view.php', ['id' => $cm->id]), 'Finish review'),
     'd-flex flex-row w-full justify-content-end'
 );
 

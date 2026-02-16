@@ -19,12 +19,16 @@ use mod_quiz\quiz_settings;
 /** @var moodle_page $PAGE */
 
 
+// Always reload page
 $PAGE->set_cacheable(false);
 
+// Page parameters
 $token = required_param('token', PARAM_ALPHANUMEXT);
 
+// Require valid token
 $linktoken = publictestlink_link_token::require_token($token);
 
+// Require valid session
 $session = publictestlink_session::check_session();
 if ($session === null) {
     redirect(new moodle_url($PLUGIN_URL . '/landing.php', ['token' => $token]));
@@ -40,31 +44,28 @@ $context = context_module::instance($cm->id);
 if (!$context) throw new moodle_exception('invalidcontext', $MODULE);
 
 $shadowuserid = $session->get_user()->get_id();
+
+// Require valid attempt
 $attempt = publictestlink_attempt::require_attempt($quizid, $shadowuserid);
 
+// Check if attempt is still valid
 $timenow = time();
 $accessmanager = new publictestlink_access_manager($quizobj, $timenow, $session->get_user(), $attempt);
 $reasons = $accessmanager->get_formatted_reasons();
 if ($reasons !== null) {
     redirect('/', $reasons, null, notification::ERROR);
-    return;
 }
 
-if (
-    $attempt->get_shadow_user()->get_id() !== $session->get_user()->get_id() ||
-    !$attempt->is_in_progress()
-) {
-    redirect(
-        new moodle_url($PLUGIN_URL . '/landing.php', ['token' => $token])
-    );
-    return;
+// If the attempt is still in progress, back to landing you go
+if (!$attempt->is_in_progress()) {
+    redirect(new moodle_url($PLUGIN_URL . '/landing.php', ['token' => $token]));
 }
 
 $quba = $attempt->get_quba();
-$quba->set_preferred_behaviour($quiz->preferredbehaviour);
 
 
 
+// Start writing page
 $PAGE->set_url($PLUGIN_URL . '/attempt.php', ['token' => $token]);
 $PAGE->requires->css('/local/publictestlink/styles.css');
 $PAGE->add_body_class('landing-body');
@@ -80,16 +81,20 @@ $PAGE->set_course($quizobj->get_course());
 $PAGE->set_cm($cm);
 $PAGE->set_context($context);
 
+// Disable navbar
 $PAGE->navbar->ignore_active(true);
 foreach ($PAGE->navbar->get_items() as $node) {
     $node->action = null;
 }
 
+
 echo $OUTPUT->header();
 
+// Write "Logged in as ..."
 user_header_writer::write($session);
 
 
+// Modal for confirming
 echo html_writer::start_div('modal fade', [
     'id' => 'ptl-submit-modal',
     'tabindex' => '-1',
@@ -135,6 +140,7 @@ echo html_writer::start_div('modal fade', [
 echo html_writer::end_div(); // modal
 
 
+// Start creating attempts table
 echo html_writer::start_div('publictestlink-attempt-wrapper');
     // COPY PASTED FROM mod/quiz/classes/output/renderer.php, summary_table()
 
@@ -214,6 +220,7 @@ echo html_writer::start_div('publictestlink-attempt-wrapper');
     // Print the summary table.
     echo html_writer::table($table);
 
+    // Buttons
     echo html_writer::start_div('d-flex mt-4 flex-column w-100 align-items-center gap-4');
         echo html_writer::link(
             new moodle_url($PLUGIN_URL . '/attempt.php', ['token' => $token]),

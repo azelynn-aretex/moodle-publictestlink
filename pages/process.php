@@ -9,13 +9,18 @@ require_once('../classes/link_token.php');
 use core\url as moodle_url;
 use mod_quiz\quiz_settings;
 
+
+// Page query parameters
 $token = required_param('token', PARAM_ALPHANUMEXT);
 $isfinish = optional_param('finishattempt', false, PARAM_BOOL);
 
+// Require a valid token.
 $linktoken = publictestlink_link_token::require_token($token);
 
+// Always reload page when accessed
 $PAGE->set_cacheable(false);
 
+// Require a session
 $session = publictestlink_session::check_session();
 if (!$session) {
     redirect(new moodle_url($PLUGIN_URL . '/landing.php', ['token' => $token]));
@@ -27,12 +32,9 @@ $quiz = $quizobj->get_quiz();
 
 $attempt = publictestlink_attempt::require_attempt($quizid, $session->get_user()->get_id());
 
-if ($attempt->get_shadow_user()->get_id() !== $session->get_user()->get_id()) {
-    redirect(new moodle_url($PLUGIN_URL . '/landing.php', ['token' => $token]));
-}
-
 $timenow = time();
 
+// Check the time left for the attempt.
 $endtime = null;
 $timeleft = null;
 if ($quiz->timelimit > 0) {
@@ -43,16 +45,19 @@ if ($quiz->timelimit > 0) {
 $quba = $attempt->get_quba();
 $quba->set_preferred_behaviour($quiz->preferredbehaviour);
 
-$timenow = time();
-
 $quba->process_all_actions(
     $timenow,
     $_POST,
 );
 
+
+// Save the attempt
 question_engine::save_questions_usage_by_activity($quba);
 
 
+/**
+ * Submits the attempt.
+ */
 function submit() {
     global $quba, $timenow, $attempt, $token;
 
@@ -63,6 +68,7 @@ function submit() {
     redirect(new moodle_url(PLUGIN_URL . '/review.php', ['token' => $token]));
 }
 
+// If there is no time left for the attempt, auto-submit
 if ($timeleft !== null && $timeleft <= 0) {
     $overduehandle = $quiz->overduehandling;
 
@@ -70,6 +76,8 @@ if ($timeleft !== null && $timeleft <= 0) {
     submit();
 }
 
+// If the user wants to finish the attempt, submit
 if ($isfinish) submit();
 
-redirect(new moodle_url($PLUGIN_URL . '/summary.php', ['token' => $token]));
+// Otherwise, go back
+redirect(new moodle_url($PLUGIN_URL . '/attempt.php', ['token' => $token]));

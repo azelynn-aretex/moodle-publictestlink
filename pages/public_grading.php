@@ -19,10 +19,9 @@ use core\output\url_select;
 use core_table\flexible_table;
 use mod_quiz\quiz_settings;
 
-// Get quiz ID from URL parameter
+// Page parameters
 $cmid = required_param('id', PARAM_INT);
 
-// Get the course module and course information
 $cm = get_coursemodule_from_id('quiz', $cmid);
 if (!$cm) {
     throw new moodle_exception('invalidcoursemodule');
@@ -35,13 +34,17 @@ if (!$course) {
 
 $quizid = $cm->instance;
 $quizcustom = publictestlink_quizcustom::from_quizid($quizid);
+
+// If quiz isn't public, go back
 if ($quizcustom === null || !$quizcustom->get_ispublic()) {
 	redirect(new moodle_url('/mod/quiz/report.php', ['id' => $cmid, 'mode' => 'overview']));
 }
+
 $quizobj = quiz_settings::create($quizid);
 $quiz = $quizobj->get_quiz();
 
 
+// Get all attempts
 $attempts = publictestlink_attempt::get_all_attempts($quizid);
 
 // Set up page context
@@ -78,12 +81,16 @@ echo $OUTPUT->render($navselect);
 
 
 
+// Start rendering table
 $table = new flexible_table('publictestlink-responses');
 
+// Get slots from the quiz structure
 $slots = $quizobj->get_structure()->get_slots();
 
+// Get maximum marks from the quiz
 $max_mark = number_format((float)$quiz->grade, 2);
 
+// Generate question columns and headers
 $question_columns = [];
 $question_headers = [];
 $i = 1;
@@ -97,6 +104,7 @@ foreach ($slots as $slotnum => $slotdata) {
 	$i++;
 }
 
+// Define columns and headers
 $table->define_columns([
     'fullname',
     'email',
@@ -126,7 +134,7 @@ $table->collapsible(false);
 
 $table->setup();
 
-
+// Start writing rows
 foreach ($attempts as $attempt) {
 	$attemptlink = new moodle_url(PLUGIN_URL . '/reviewteacher.php', ['attemptid' => $attempt->get_id()]);
 	$shadowuser = $attempt->get_shadow_user();
@@ -152,6 +160,7 @@ foreach ($attempts as $attempt) {
     
     $row['sumgrades'] = html_writer::link($attemptlink, number_format($attempt->get_scaled_grade(), 2), ['class' => 'font-weight-bold']);
 
+	// Start writing per-question columns
     foreach ($quba->get_slots() as $slot) {
         $slot_grade = $quba->get_question_mark($slot);
 		if ($slot_grade === null) continue;
@@ -183,7 +192,7 @@ foreach ($attempts as $attempt) {
     $table->add_data_keyed($row);
 }
 
-
+// End table output
 $table->finish_output();
 
 echo $OUTPUT->footer();

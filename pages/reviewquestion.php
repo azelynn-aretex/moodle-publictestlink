@@ -11,7 +11,7 @@ require_once('../locallib.php');
 require_once('../classes/attempt.php');
 
 
-
+// Page parameters
 $attemptid = required_param('attemptid', PARAM_INT);
 $slot = required_param('slot', PARAM_INT);
 
@@ -25,6 +25,7 @@ if (!$context) throw new moodle_exception('invalidcontext', $MODULE);
 
 $shadowuser = $attempt->get_shadow_user();
 
+// Require logging in
 require_login($quizobj->get_course(), false, $cm);
 /** @var context $context */
 require_capability('mod/quiz:viewreports', $context);
@@ -33,6 +34,7 @@ $quba = $attempt->get_quba();
 $quba->set_preferred_behaviour($quiz->preferredbehaviour);
 
 
+// Create summary table
 $summary = new attempt_summary_information();
 $summary->add_item('username',
     get_string('respondent', MODULE),
@@ -61,7 +63,7 @@ if ($completedon !== null) {
 }
 
 
-
+// Start creating page
 $PAGE->set_url(PLUGIN_URL . '/reviewquestion.php', ['attemptid' => $attemptid, 'slot' => $slot]);
 $PAGE->set_pagelayout('popup');
 $PAGE->set_title('Question Review');
@@ -82,9 +84,13 @@ $displayoptions->history = question_display_options::VISIBLE;
 
 echo $OUTPUT->header();
 
+// Render summary
 echo html_writer::div($OUTPUT->render($summary), 'mb-3');
+
+// Render question
 echo $quba->render_question($slot, $displayoptions, $slot);
 
+// Render close button
 echo $OUTPUT->close_window_button();
 
 echo $OUTPUT->footer();

@@ -17,9 +17,8 @@ use mod_quiz\quiz_settings;
  */
 class hook_callbacks {
     /**
-     * Inject CSS to hide header/sidebar for guests or non-logged-in users.
-     *
-     * @param before_footer_html_generation $hook
+     * Adds two options at the bottom of the dropdown navigation control under the `Results` tab.
+     * @param before_footer_html_generation $hook The hook.
      */
     public static function before_footer_html_generation(before_footer_html_generation $hook): void {
         global $PAGE;
@@ -37,29 +36,33 @@ class hook_callbacks {
         $quizcustom = \publictestlink_quizcustom::from_quizid($quizid);
         if ($quizcustom === null || !$quizcustom->get_ispublic()) return;
 
-        $js = '<script>
-        document.addEventListener("DOMContentLoaded", function() {
-            var selects = document.querySelectorAll("select.urlselect");
-            if (selects.length > 0) {
-                var publicGrading = document.createElement("option");
-                publicGrading.value = "/local/publictestlink/pages/public_grading.php?id=' . $cmid . '";
-                publicGrading.text = "Public Link: Grading";
+        $js = <<<JS
+            document.addEventListener("DOMContentLoaded", function() {
+                var selects = document.querySelectorAll("select.urlselect");
+                if (selects.length > 0) {
+                    var publicGrading = document.createElement("option");
+                    publicGrading.value = "/local/publictestlink/pages/public_grading.php?id=$cmid";
+                    publicGrading.text = "Public Link: Grading";
 
-                var publicResponses = document.createElement("option");
-                publicResponses.value = "/local/publictestlink/pages/public_responses.php?id=' . $cmid . '";
-                publicResponses.text = "Public Link: Responses";
-                
-                selects.forEach(function(select) {
-                    select.appendChild(publicGrading.cloneNode(true));
-                    select.appendChild(publicResponses.cloneNode(true));
-                });
-            }
-        });
-        </script>';
+                    var publicResponses = document.createElement("option");
+                    publicResponses.value = "/local/publictestlink/pages/public_responses.php?id=$cmid";
+                    publicResponses.text = "Public Link: Responses";
+                    
+                    selects.forEach(function(select) {
+                        select.appendChild(publicGrading.cloneNode(true));
+                        select.appendChild(publicResponses.cloneNode(true));
+                    });
+                }
+            });
+        JS;
         
-        $hook->add_html($js);
+        $hook->add_html("<script>$js</script>");
     }
 
+    /**
+     * Adds the public link to the `Quiz` tab if the quiz is public.
+     * @param before_footer_html_generation $hook The hook.
+     */
     public static function quiz_tab(before_footer_html_generation $hook): void {
         global $PAGE;
 
@@ -73,12 +76,17 @@ class hook_callbacks {
 
         $quizid = $cm->instance;
         $quizcustom = \publictestlink_quizcustom::from_quizid($quizid);
+
+        // Check if quiz is public
         if ($quizcustom === null || !$quizcustom->get_ispublic()) return;
+
         $quizobj = quiz_settings::create($quizid);
         $quiz = $quizobj->get_quiz();
 
         $linktoken = \publictestlink_link_token::ensure_for_quiz($quizid);
 
+
+        // Start generating HTML
         $publicurl = new moodle_url(\PLUGIN_URL . '/landing.php', [
             'token' => $linktoken->get_token()
         ]);
@@ -87,24 +95,23 @@ class hook_callbacks {
         $buttonid = 'publicquizlinkbtn_' . $quiz->id;
 
         $linkhtml = html_writer::start_div('d-flex flex-row align-items-center gap-2 mb-3');
-        $linkhtml .= html_writer::tag('p', get_string('public_url', 'local_publictestlink'), ['class' => 'text-nowrap m-0']);
-        $linkhtml .= html_writer::empty_tag('input', [
-            'type'     => 'text',
-            'class'    => 'w-100 form-control',
-            'id'       => $inputid,
-            'value'    => $publicurl->out(false),
-            'readonly' => 'readonly',
-        ]);
-        $linkhtml .= html_writer::tag('button', get_string('public_url_copy', 'local_publictestlink'), [
-            'type' => 'button',
-            'class' => 'btn btn-primary text-nowrap',
-            'id' => $buttonid,
-        ]);
+            $linkhtml .= html_writer::tag('p', get_string('public_url', 'local_publictestlink'), ['class' => 'text-nowrap m-0']);
+            $linkhtml .= html_writer::empty_tag('input', [
+                'type'     => 'text',
+                'class'    => 'w-100 form-control',
+                'id'       => $inputid,
+                'value'    => $publicurl->out(false),
+                'readonly' => 'readonly',
+            ]);
+            $linkhtml .= html_writer::tag('button', get_string('public_url_copy', 'local_publictestlink'), [
+                'type' => 'button',
+                'class' => 'btn btn-primary text-nowrap',
+                'id' => $buttonid,
+            ]);
         $linkhtml .= html_writer::end_div();
 
-        // Optional: Add copy JS inline
-        $linkhtml .= html_writer::script("
-            (function() {
+        $linkhtml .= html_writer::script(<<<JS
+            (() => {
                 const btn = document.getElementById('$buttonid');
                 const input = document.getElementById('$inputid');
                 if (!btn || !input) return;
@@ -118,9 +125,7 @@ class hook_callbacks {
                     alert('Copied!');
                 });
             })();
-        ");
-
-        $linkhtml;
+        JS);
 
         $hook->add_html($linkhtml);
     }
