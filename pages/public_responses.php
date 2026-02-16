@@ -12,6 +12,7 @@ require_once('../classes/quizcustom.php');
 require_once('../classes/attempt.php');
 
 use core\exception\moodle_exception;
+use core\output\actions\popup_action;
 use core\output\html_writer;
 use core\url as moodle_url;
 use core\output\url_select;
@@ -168,7 +169,14 @@ foreach ($attempts as $attempt) {
 		}
         
         $icon_html = $OUTPUT->pix_icon($icon, '', 'moodle', ['class' => 'resourcelinkicon']);
-        $row["q$slot"] = html_writer::div($icon_html . ' ' . $quba->get_response_summary($slot), $class);
+
+		$url = new moodle_url(PLUGIN_URL . '/reviewquestion.php', ['attemptid' => $attempt->get_id(), 'slot' => $slot]);
+		$row["q$slot"] = $OUTPUT->action_link(
+			$url,
+			html_writer::tag('p', $icon_html . ' ' . $quba->get_response_summary($slot)),
+            new popup_action('click', $url, 'reviewquestion', ['height' => 450, 'width' => 650]),
+            ['title' => get_string('reviewresponse', 'quiz')]
+		);
     }
 
     $table->add_data_keyed($row);
