@@ -61,14 +61,6 @@ class publictestlink_access_manager {
                     }
                 }
             }
-    
-            // TODO time limit handling
-            if ($this->attempt && $quiz->timelimit) {
-                $end = $this->attempt->get_timestart() + $quiz->timelimit;
-                if ($this->timenow > $end) {
-                    $reasons[] = get_string('accesserror_timelimitexpired', $MODULE);
-                }
-            }
         }
 
         return $reasons;
