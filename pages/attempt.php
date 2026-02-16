@@ -119,18 +119,16 @@ if ($timeleft !== null) {
         return sprintf('%d:%02d', $minutes, $seconds);
     }
 
-    echo html_writer::div(
-        html_writer::span(get_string('timeleft', 'quiz'), 'timer-label') .
-        html_writer::span(format_time_left($timeleft), 'timer-value', [
-            'id' => 'quiz-timer',
-            'data-endtime' => $endtime
-        ]),
-        'quiz-timer-wrapper'
-    );
+    echo html_writer::start_div('mb-2', ['id' => 'quiz-timer-wrapper', 'style' => 'display: flex;']);
+        echo html_writer::start_div('quiz-timer-inner py-1 px-2 ms-auto', ['id' => 'quiz-timer', 'role' => 'timer']);
+            echo 'Time left: ';
+            echo html_writer::tag('span', '', ['id' => 'quiz-time-left']);
+        echo html_writer::end_div();
+    echo html_writer::end_div();
 
     $PAGE->requires->js_init_code(<<<JS
         (function() {
-            const el = document.getElementById('quiz-timer');
+            const el = document.getElementById('quiz-time-left');
             if (!el) return;
 
             const end = parseInt($endtime, 10) * 1000;
