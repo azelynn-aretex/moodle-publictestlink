@@ -10,6 +10,7 @@
 require_once('../../../config.php');
 require_once('../classes/quizcustom.php');
 require_once('../classes/attempt.php');
+require_once('../classes/filter_writer.php');
 
 use core\exception\moodle_exception;
 use core\output\actions\popup_action;
@@ -21,6 +22,8 @@ use mod_quiz\quiz_settings;
 
 // Page parameters
 $cmid = required_param('id', PARAM_INT);
+$firstname_filter = optional_param('tifirst', '', PARAM_ALPHA);
+$lastname_filter  = optional_param('tilast', '', PARAM_ALPHA);
 
 $cm = get_coursemodule_from_id('quiz', $cmid);
 if (!$cm) {
@@ -101,23 +104,27 @@ echo $OUTPUT->render($navselect);
 
 // Display name filter buttons
 echo html_writer::start_tag('div', ['class' => 'mb-3']);
-echo html_writer::tag('p', html_writer::tag('strong', 'Filter by first name:'), ['class' => 'mb-2']);
-echo html_writer::start_tag('div', ['class' => 'd-flex flex-wrap gap-2 mb-3']);
-echo html_writer::link(new moodle_url($PAGE->url, ['firstname' => '', 'lastname' => $lastname_filter]), 'All', ['class' => 'btn btn-sm btn-outline-secondary' . ($firstname_filter === '' ? ' active' : '')]);
-foreach (range('A', 'Z') as $letter) {
-    $params = ['firstname' => $letter, 'lastname' => $lastname_filter];
-    echo html_writer::link(new moodle_url($PAGE->url, $params), $letter, ['class' => 'btn btn-sm btn-outline-secondary' . ($firstname_filter === $letter ? ' active' : '')]);
-}
-echo html_writer::end_tag('div');
+// echo html_writer::tag('p', html_writer::tag('strong', 'Filter by first name:'), ['class' => 'mb-2']);
+// echo html_writer::start_tag('div', ['class' => 'd-flex flex-wrap gap-2 mb-3']);
+// echo html_writer::link(new moodle_url($PAGE->url, ['firstname' => '', 'lastname' => $lastname_filter]), 'All', ['class' => 'btn btn-sm btn-outline-secondary' . ($firstname_filter === '' ? ' active' : '')]);
+// foreach (range('A', 'Z') as $letter) {
+//     $params = ['firstname' => $letter, 'lastname' => $lastname_filter];
+//     echo html_writer::link(new moodle_url($PAGE->url, $params), $letter, ['class' => 'btn btn-sm btn-outline-secondary' . ($firstname_filter === $letter ? ' active' : '')]);
+// }
+// echo html_writer::end_tag('div');
 
-echo html_writer::tag('p', html_writer::tag('strong', 'Filter by last name:'), ['class' => 'mb-2']);
-echo html_writer::start_tag('div', ['class' => 'd-flex flex-wrap gap-2']);
-echo html_writer::link(new moodle_url($PAGE->url, ['firstname' => $firstname_filter, 'lastname' => '']), 'All', ['class' => 'btn btn-sm btn-outline-secondary' . ($lastname_filter === '' ? ' active' : '')]);
-foreach (range('A', 'Z') as $letter) {
-    $params = ['firstname' => $firstname_filter, 'lastname' => $letter];
-    echo html_writer::link(new moodle_url($PAGE->url, $params), $letter, ['class' => 'btn btn-sm btn-outline-secondary' . ($lastname_filter === $letter ? ' active' : '')]);
-}
-echo html_writer::end_tag('div');
+// echo html_writer::tag('p', html_writer::tag('strong', 'Filter by last name:'), ['class' => 'mb-2']);
+// echo html_writer::start_tag('div', ['class' => 'd-flex flex-wrap gap-2']);
+// echo html_writer::link(new moodle_url($PAGE->url, ['firstname' => $firstname_filter, 'lastname' => '']), 'All', ['class' => 'btn btn-sm btn-outline-secondary' . ($lastname_filter === '' ? ' active' : '')]);
+// foreach (range('A', 'Z') as $letter) {
+//     $params = ['firstname' => $firstname_filter, 'lastname' => $letter];
+//     echo html_writer::link(new moodle_url($PAGE->url, $params), $letter, ['class' => 'btn btn-sm btn-outline-secondary' . ($lastname_filter === $letter ? ' active' : '')]);
+// }
+// echo html_writer::end_tag('div');
+
+echo filter_writer::render_name_filters('tifirst', 'First name');
+echo filter_writer::render_name_filters('tilast', 'Last name');
+
 echo html_writer::end_tag('div');
 
 // Start rendering table
