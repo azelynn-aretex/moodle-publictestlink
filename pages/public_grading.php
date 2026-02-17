@@ -43,9 +43,29 @@ if ($quizcustom === null || !$quizcustom->get_ispublic()) {
 $quizobj = quiz_settings::create($quizid);
 $quiz = $quizobj->get_quiz();
 
+// Get name filters from URL parameters
+$firstname_filter = optional_param('firstname', '', PARAM_ALPHA);
+$lastname_filter = optional_param('lastname', '', PARAM_ALPHA);
 
 // Get all attempts
 $attempts = publictestlink_attempt::get_all_attempts($quizid);
+
+// Filter attempts by first name and last name if filters are set
+if (!empty($firstname_filter) || !empty($lastname_filter)) {
+    $attempts = array_filter($attempts, function($attempt) use ($firstname_filter, $lastname_filter) {
+        $shadowuser = $attempt->get_shadow_user();
+        $firstname = strtolower($shadowuser->get_firstname());
+        $lastname = strtolower($shadowuser->get_lastname());
+        
+        if (!empty($firstname_filter) && strpos($firstname, strtolower($firstname_filter)) !== 0) {
+            return false;
+        }
+        if (!empty($lastname_filter) && strpos($lastname, strtolower($lastname_filter)) !== 0) {
+            return false;
+        }
+        return true;
+    });
+}
 
 // Set up page context
 $PAGE->set_cm($cm, $course);
@@ -79,7 +99,26 @@ $navselect->class = 'urlselect mb-3';
 
 echo $OUTPUT->render($navselect);
 
+// Display name filter buttons
+echo html_writer::start_tag('div', ['class' => 'mb-3']);
+echo html_writer::tag('p', html_writer::tag('strong', 'Filter by first name:'), ['class' => 'mb-2']);
+echo html_writer::start_tag('div', ['class' => 'd-flex flex-wrap gap-2 mb-3']);
+echo html_writer::link(new moodle_url($PAGE->url, ['firstname' => '', 'lastname' => $lastname_filter]), 'All', ['class' => 'btn btn-sm btn-outline-secondary' . ($firstname_filter === '' ? ' active' : '')]);
+foreach (range('A', 'Z') as $letter) {
+    $params = ['firstname' => $letter, 'lastname' => $lastname_filter];
+    echo html_writer::link(new moodle_url($PAGE->url, $params), $letter, ['class' => 'btn btn-sm btn-outline-secondary' . ($firstname_filter === $letter ? ' active' : '')]);
+}
+echo html_writer::end_tag('div');
 
+echo html_writer::tag('p', html_writer::tag('strong', 'Filter by last name:'), ['class' => 'mb-2']);
+echo html_writer::start_tag('div', ['class' => 'd-flex flex-wrap gap-2']);
+echo html_writer::link(new moodle_url($PAGE->url, ['firstname' => $firstname_filter, 'lastname' => '']), 'All', ['class' => 'btn btn-sm btn-outline-secondary' . ($lastname_filter === '' ? ' active' : '')]);
+foreach (range('A', 'Z') as $letter) {
+    $params = ['firstname' => $firstname_filter, 'lastname' => $letter];
+    echo html_writer::link(new moodle_url($PAGE->url, $params), $letter, ['class' => 'btn btn-sm btn-outline-secondary' . ($lastname_filter === $letter ? ' active' : '')]);
+}
+echo html_writer::end_tag('div');
+echo html_writer::end_tag('div');
 
 // Start rendering table
 $table = new flexible_table('publictestlink-responses');
