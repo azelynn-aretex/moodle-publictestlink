@@ -10,6 +10,7 @@
 require_once('../../../config.php');
 require_once('../classes/quizcustom.php');
 require_once('../classes/attempt.php');
+require_once('../classes/filter_writer.php');
 
 use core\exception\moodle_exception;
 use core\output\actions\popup_action;
@@ -21,6 +22,8 @@ use mod_quiz\quiz_settings;
 
 // Page parameters
 $cmid = required_param('id', PARAM_INT);
+$firstname_filter = optional_param('tifirst', null, PARAM_ALPHA);
+$lastname_filter  = optional_param('tilast', null, PARAM_ALPHA);
 
 $cm = get_coursemodule_from_id('quiz', $cmid);
 if (!$cm) {
@@ -43,8 +46,7 @@ if ($quizcustom === null || !$quizcustom->get_ispublic()) {
 $quizobj = quiz_settings::create($quizid);
 $quiz = $quizobj->get_quiz();
 
-
-$attempts = publictestlink_attempt::get_all_attempts($quizid);
+$attempts = publictestlink_attempt::get_all_attempts($quizid, $firstname_filter, $lastname_filter);
 
 // Set up page context
 $PAGE->set_cm($cm, $course);
@@ -77,6 +79,15 @@ $navselect->set_label('Report navigation', ['class' => 'visually-hidden']);
 $navselect->class = 'urlselect mb-3';
 
 echo $OUTPUT->render($navselect);
+
+// Display name filter buttons
+echo html_writer::start_tag('div', ['class' => 'mb-3']);
+
+echo filter_writer::render_name_filters('tifirst', 'First name');
+echo filter_writer::render_name_filters('tilast', 'Last name');
+
+echo html_writer::end_tag('div');
+
 
 
 $table = new flexible_table('publictestlink-responses');
