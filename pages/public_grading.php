@@ -22,8 +22,8 @@ use mod_quiz\quiz_settings;
 
 // Page parameters
 $cmid = required_param('id', PARAM_INT);
-$firstname_filter = optional_param('tifirst', '', PARAM_ALPHA);
-$lastname_filter  = optional_param('tilast', '', PARAM_ALPHA);
+$firstname_filter = optional_param('tifirst', null, PARAM_ALPHA);
+$lastname_filter  = optional_param('tilast', null, PARAM_ALPHA);
 
 $cm = get_coursemodule_from_id('quiz', $cmid);
 if (!$cm) {
@@ -46,29 +46,8 @@ if ($quizcustom === null || !$quizcustom->get_ispublic()) {
 $quizobj = quiz_settings::create($quizid);
 $quiz = $quizobj->get_quiz();
 
-// Get name filters from URL parameters
-$firstname_filter = optional_param('firstname', '', PARAM_ALPHA);
-$lastname_filter = optional_param('lastname', '', PARAM_ALPHA);
-
 // Get all attempts
-$attempts = publictestlink_attempt::get_all_attempts($quizid);
-
-// Filter attempts by first name and last name if filters are set
-if (!empty($firstname_filter) || !empty($lastname_filter)) {
-    $attempts = array_filter($attempts, function($attempt) use ($firstname_filter, $lastname_filter) {
-        $shadowuser = $attempt->get_shadow_user();
-        $firstname = strtolower($shadowuser->get_firstname());
-        $lastname = strtolower($shadowuser->get_lastname());
-        
-        if (!empty($firstname_filter) && strpos($firstname, strtolower($firstname_filter)) !== 0) {
-            return false;
-        }
-        if (!empty($lastname_filter) && strpos($lastname, strtolower($lastname_filter)) !== 0) {
-            return false;
-        }
-        return true;
-    });
-}
+$attempts = publictestlink_attempt::get_all_attempts($quizid, $firstname_filter, $lastname_filter);
 
 // Set up page context
 $PAGE->set_cm($cm, $course);
