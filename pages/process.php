@@ -79,5 +79,5 @@ if ($timeleft !== null && $timeleft <= 0) {
 // If the user wants to finish the attempt, submit
 if ($isfinish) submit();
 
-// Otherwise, go back
-redirect(new moodle_url($PLUGIN_URL . '/attempt.php', ['token' => $token]));
+// Otherwise, go to summary
+redirect(new moodle_url($PLUGIN_URL . '/summary.php', ['token' => $token]));
