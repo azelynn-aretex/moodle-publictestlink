@@ -1,6 +1,6 @@
 <?php
 /**
- * Public responses page - displays quiz responses without requiring authentication.
+ * Public grading page - displays quiz grades without requiring authentication.
  * 
  * @package    local_publictestlink
  * @copyright  2026
@@ -23,13 +23,17 @@ use mod_quiz\quiz_settings;
 
 // Page parameters
 $cmid = required_param('id', PARAM_INT);
+$mode = optional_param('mode', 'overview', PARAM_TEXT);
 
 $action = optional_param('action', '', PARAM_ALPHA);
 $attemptids = optional_param_array('attemptid', [], PARAM_INT);
+
 $firstname_filter = optional_param('tifirst', null, PARAM_ALPHA);
 $lastname_filter  = optional_param('tilast', null, PARAM_ALPHA);
+
 $pagesize  = optional_param('pagesize', 20, PARAM_INT);
 $page  = optional_param('page', 0, PARAM_INT);
+
 
 $cm = get_coursemodule_from_id('quiz', $cmid);
 if (!$cm) {
@@ -49,12 +53,16 @@ if ($quizcustom === null || !$quizcustom->get_ispublic()) {
     redirect(new moodle_url('/mod/quiz/report.php', ['id' => $cmid, 'mode' => 'overview']));
 }
 
+$quizobj = quiz_settings::create($quizid);
+$quiz = $quizobj->get_quiz();
+
 // Set up page context
 $PAGE->set_cm($cm, $course);
 $PAGE->set_context(context_module::instance($cmid));
 $PAGE->set_course($course);
-$PAGE->set_url(new moodle_url('/local/publictestlink/pages/public_responses.php', [
+$PAGE->set_url(new moodle_url(PLUGIN_URL . '/report.php', [
     'id' => $cmid,
+    'mode' => $mode,
     'tifirst' => $firstname_filter,
     'tilast' => $lastname_filter,
     'pagesize' => $pagesize
@@ -63,7 +71,7 @@ $PAGE->set_title('Public Quiz Grades');
 $PAGE->set_heading('Public Quiz Grades');
 $PAGE->set_pagelayout('report');
 
-$pageurl = new moodle_url(PLUGIN_URL . '/public_responses.php', ['id' => $cmid]);
+$pageurl = new moodle_url(PLUGIN_URL . '/report.php', ['id' => $cmid]);
 
 // Handle delete action
 if ($action === 'delete' && !empty($attemptids) && confirm_sesskey()) {
@@ -86,22 +94,6 @@ if ($action === 'delete' && !empty($attemptids) && confirm_sesskey()) {
     redirect($pageurl);
 }
 
-$quizobj = quiz_settings::create($quizid);
-$quiz = $quizobj->get_quiz();
-
-// Get name filters from URL parameters
-$firstname_filter = optional_param('firstname', '', PARAM_ALPHA);
-$lastname_filter = optional_param('lastname', '', PARAM_ALPHA);
-
-// Get all attempts
-$attempts = publictestlink_attempt::get_all_attempts($quizid, $firstname_filter, $lastname_filter);
-
-// Calculate pagination
-$totalattempts = count($attempts);
-$offset = $page * $pagesize;
-$attempts_paged = array_slice($attempts, $offset, $pagesize);
-
-
 // Create display options form
 $mform = new results_display_form($PAGE->url);
 $data = $mform->get_data();
@@ -115,6 +107,16 @@ if ($data !== null) {
     redirect(new moodle_url($PAGE->url, $currentparams));
 }
 
+
+// Get all attempts
+$attempts = publictestlink_attempt::get_all_attempts($quizid, $firstname_filter, $lastname_filter);
+
+// Calculate pagination
+$totalattempts = count($attempts);
+$offset = $page * $pagesize;
+$attempts_paged = array_slice($attempts, $offset, $pagesize);
+
+
 echo $OUTPUT->header();
 
 // Jump menu for report navigation.
@@ -123,13 +125,13 @@ $navoptions = [
     (new moodle_url('/mod/quiz/report.php', ['id' => $cmid, 'mode' => 'responses']))->out(false) => 'Responses',
     (new moodle_url('/mod/quiz/report.php', ['id' => $cmid, 'mode' => 'statistics']))->out(false) => 'Statistics',
     (new moodle_url('/mod/quiz/report.php', ['id' => $cmid, 'mode' => 'grading']))->out(false) => 'Manual grading',
-    (new moodle_url('/local/publictestlink/pages/public_grading.php', ['id' => $cmid]))->out(false) => 'Public Link: Grading',
-    (new moodle_url('/local/publictestlink/pages/public_responses.php', ['id' => $cmid]))->out(false) => 'Public Link: Responses',
+    (new moodle_url(PLUGIN_URL . '/report.php', ['id' => $cmid, 'mode' => 'overview']))->out(false) => 'Public Link: Grading',
+    (new moodle_url(PLUGIN_URL . '/report.php', ['id' => $cmid, 'mode' => 'responses']))->out(false) => 'Public Link: Responses',
 ];
 
 $navselect = new url_select(
     $navoptions,
-    (new moodle_url('/local/publictestlink/pages/public_responses.php', ['id' => $cmid]))->out(false),
+    (new moodle_url(PLUGIN_URL . '/report.php', ['id' => $cmid, 'mode' => $mode]))->out(false),
     null,
     'publictestlink_report_nav'
 );
@@ -149,6 +151,7 @@ echo html_writer::start_tag('form', [
 ]);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
 
+
 // Display name filter buttons
 echo html_writer::start_tag('div', ['class' => 'mb-3']);
 
@@ -157,28 +160,31 @@ echo filter_writer::render_name_filters('tilast', 'Last name');
 
 echo html_writer::end_tag('div');
 
+// Start rendering table
+$table = new flexible_table('publictestlink-grading');
 
-
-$table = new flexible_table('publictestlink-responses');
-
+// Get slots from the quiz structure
 $slots = $quizobj->get_structure()->get_slots();
 
 // Get maximum marks from the quiz
 $max_mark = number_format((float)$quiz->grade, 2);
 
+// Generate question columns and headers
 $question_columns = [];
 $question_headers = [];
-$i = 1;
 foreach ($slots as $slotnum => $slotdata) {
     $slot = $slotdata->slot;
     $question_columns[] = "q$slot";
 
-    $slot_max_mark = number_format($slotdata->maxmark, 2);
-    $question_headers[] = "Response $i";
-
-    $i++;
+    if ($mode === 'overview') {
+        $slot_max_mark = number_format($slotdata->maxmark, 2);
+        $question_headers[] = "Q. $slot /$slot_max_mark";
+    } else if ($mode === 'responses') {
+        $question_headers[] = "Response $slot";
+    } else throw new moodle_exception('invalidurl');
 }
 
+// Define columns and headers
 $table->define_columns([
     'select',
     'fullname',
@@ -245,7 +251,7 @@ foreach ($attempts_paged as $attempt) {
     foreach ($quba->get_slots() as $slot) {
         $slot_grade = $quba->get_question_mark($slot);
         if ($slot_grade === null) continue;
-
+        
         $fraction = $quba->get_question_fraction($slot);
     
         if ($fraction >= 0.99) {
@@ -258,18 +264,27 @@ foreach ($attempts_paged as $attempt) {
         
         $icon_html = $OUTPUT->pix_icon($icon, '', 'moodle', ['class' => 'resourcelinkicon']);
 
-        $url = new moodle_url('/local/publictestlink/pages/reviewquestion.php', ['attemptid' => $attempt->get_id(), 'slot' => $slot]);
+        $url = new moodle_url(PLUGIN_URL . '/reviewquestion.php', ['attemptid' => $attempt->get_id(), 'slot' => $slot]);
+
+        if ($mode === 'overview') {
+            $display = number_format((float)$slot_grade, 2);
+        } else if ($mode === 'responses') {
+            $display = $quba->get_response_summary($slot);
+        } else throw new moodle_exception('invalidurl');
+
         $row["q$slot"] = $OUTPUT->action_link(
             $url,
-            html_writer::tag('p', $icon_html . ' ' . $quba->get_response_summary($slot)),
+            html_writer::tag('p', $icon_html . ' ' . $display),
             new popup_action('click', $url, 'reviewquestion', ['height' => 450, 'width' => 650]),
             ['title' => get_string('reviewresponse', 'quiz')]
         );
     }
+    
 
     $table->add_data_keyed($row);
 }
 
+// End table output
 $table->finish_output();
 
 // Bulk delete button with spacing
