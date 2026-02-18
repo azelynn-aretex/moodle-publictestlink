@@ -10,7 +10,6 @@
 require_once('../../../config.php');
 require_once('../classes/quizcustom.php');
 require_once('../classes/attempt.php');
-require_once('../classes/filter_writer.php');
 
 use core\exception\moodle_exception;
 use core\output\actions\popup_action;
@@ -22,6 +21,8 @@ use mod_quiz\quiz_settings;
 
 // Page parameters
 $cmid = required_param('id', PARAM_INT);
+$action = optional_param('action', '', PARAM_ALPHA);
+$attemptids = optional_param_array('attemptid', [], PARAM_INT);
 
 $cm = get_coursemodule_from_id('quiz', $cmid);
 if (!$cm) {
@@ -101,6 +102,10 @@ if ($action === 'delete' && !empty($attemptids) && confirm_sesskey()) {
 $quizobj = quiz_settings::create($quizid);
 $quiz = $quizobj->get_quiz();
 
+// Get name filters from URL parameters
+$firstname_filter = optional_param('firstname', '', PARAM_ALPHA);
+$lastname_filter = optional_param('lastname', '', PARAM_ALPHA);
+
 // Get all attempts
 $attempts = publictestlink_attempt::get_all_attempts($quizid);
 
@@ -120,15 +125,6 @@ if (!empty($firstname_filter) || !empty($lastname_filter)) {
         return true;
     });
 }
-
-// Set up page context
-$PAGE->set_cm($cm, $course);
-$PAGE->set_context(context_module::instance($cmid));
-$PAGE->set_course($course);
-$PAGE->set_url(new moodle_url('/local/publictestlink/pages/public_grading.php', ['id' => $cmid]));
-$PAGE->set_title('Public Quiz Grades');
-$PAGE->set_heading('Public Quiz Grades');
-$PAGE->set_pagelayout('report');
 
 echo $OUTPUT->header();
 
@@ -155,10 +151,23 @@ echo $OUTPUT->render($navselect);
 
 // Display name filter buttons
 echo html_writer::start_tag('div', ['class' => 'mb-3']);
+echo html_writer::tag('p', html_writer::tag('strong', 'Filter by first name:'), ['class' => 'mb-2']);
+echo html_writer::start_tag('div', ['class' => 'd-flex flex-wrap gap-2 mb-3']);
+echo html_writer::link(new moodle_url($PAGE->url, ['firstname' => '', 'lastname' => $lastname_filter]), 'All', ['class' => 'btn btn-sm btn-outline-secondary' . ($firstname_filter === '' ? ' active' : '')]);
+foreach (range('A', 'Z') as $letter) {
+    $params = ['firstname' => $letter, 'lastname' => $lastname_filter];
+    echo html_writer::link(new moodle_url($PAGE->url, $params), $letter, ['class' => 'btn btn-sm btn-outline-secondary' . ($firstname_filter === $letter ? ' active' : '')]);
+}
+echo html_writer::end_tag('div');
 
-echo filter_writer::render_name_filters('tifirst', 'First name');
-echo filter_writer::render_name_filters('tilast', 'Last name');
-
+echo html_writer::tag('p', html_writer::tag('strong', 'Filter by last name:'), ['class' => 'mb-2']);
+echo html_writer::start_tag('div', ['class' => 'd-flex flex-wrap gap-2']);
+echo html_writer::link(new moodle_url($PAGE->url, ['firstname' => $firstname_filter, 'lastname' => '']), 'All', ['class' => 'btn btn-sm btn-outline-secondary' . ($lastname_filter === '' ? ' active' : '')]);
+foreach (range('A', 'Z') as $letter) {
+    $params = ['firstname' => $firstname_filter, 'lastname' => $letter];
+    echo html_writer::link(new moodle_url($PAGE->url, $params), $letter, ['class' => 'btn btn-sm btn-outline-secondary' . ($lastname_filter === $letter ? ' active' : '')]);
+}
+echo html_writer::end_tag('div');
 echo html_writer::end_tag('div');
 
 // Start form for batch operations
