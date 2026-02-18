@@ -206,6 +206,15 @@ class publictestlink_attempt {
     }
 
     /**
+     * Gets the raw question usage ID for this attempt.
+     * @return int The question usage ID.
+     * This is for the Public grading and reponses.
+     */
+    public function get_questionusageid(): int {
+        return $this->questionusageid;
+    }
+
+    /**
      * Gets the quiz ID of the attempt.
      * @return int The quiz ID.
      */

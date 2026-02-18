@@ -34,3 +34,7 @@ $string['grade'] = 'Grade';
 
 $string['attempt_state_inprogress'] = 'In progress';
 $string['attempt_state_submitted'] = 'Submitted';
+
+//For public grading and response page
+$string['attemptsdeleted'] = '{$a} attempt(s) deleted successfully.';
+$string['attemptsdeleteerrors'] = 'Unable to delete {$a} attempt(s). Check logs for details.';
