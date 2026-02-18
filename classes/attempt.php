@@ -165,11 +165,38 @@ class publictestlink_attempt {
      * @param int $quizid The quiz ID.
      * @return self[] The attempts, sorted by `timestart`. Empty if none found.
      */
-    public static function get_all_attempts(int $quizid) {
+    public static function get_all_attempts(int $quizid, ?string $firstname = null, ?string $lastname = null) {
         global $DB;
         /** @var moodle_database $DB */
 
-        $records = $DB->get_records('local_publictestlink_quizattempt', ['quizid' => $quizid], 'timestart ASC', '*');
+        $sql = <<<SQL
+            SELECT quizattempt.*
+            FROM {local_publictestlink_quizattempt} quizattempt
+            JOIN {local_publictestlink_shadowuser} shadowuser ON shadowuser.id = quizattempt.shadowuserid
+            WHERE quizattempt.quizid = :quizid
+        SQL;
+        $sqlparams = ['quizid' => $quizid];
+
+        if ($firstname !== null) {
+            $sql .= <<<SQL
+                AND UPPER(shadowuser.firstname) LIKE :firstname
+            SQL;
+            $sqlparams['firstname'] = strtoupper($firstname) . '%';
+        }
+
+        if ($lastname !== null) {
+            $sql .= <<<SQL
+                AND UPPER(shadowuser.lastname) LIKE :lastname
+            SQL;
+            $sqlparams['lastname'] = strtoupper($lastname) . '%';
+        }
+
+        $sql .= <<<SQL
+            ORDER BY quizattempt.timestart ASC
+        SQL;
+
+        $records = $DB->get_records_sql($sql, $sqlparams);
+
         return array_map(fn ($record) => new self(
             $record->id,
             $record->shadowuserid,
