@@ -53,6 +53,9 @@ if ($quizcustom === null || !$quizcustom->get_ispublic()) {
     redirect(new moodle_url('/mod/quiz/report.php', ['id' => $cmid, 'mode' => 'overview']));
 }
 
+$quizobj = quiz_settings::create($quizid);
+$quiz = $quizobj->get_quiz();
+
 // Set up page context
 $PAGE->set_cm($cm, $course);
 $PAGE->set_context(context_module::instance($cmid));
@@ -91,18 +94,6 @@ if ($action === 'delete' && !empty($attemptids) && confirm_sesskey()) {
     redirect($pageurl);
 }
 
-$quizobj = quiz_settings::create($quizid);
-$quiz = $quizobj->get_quiz();
-
-// Get all attempts
-$attempts = publictestlink_attempt::get_all_attempts($quizid, $firstname_filter, $lastname_filter);
-
-// Calculate pagination
-$totalattempts = count($attempts);
-$offset = $page * $pagesize;
-$attempts_paged = array_slice($attempts, $offset, $pagesize);
-
-
 // Create display options form
 $mform = new results_display_form($PAGE->url);
 $data = $mform->get_data();
@@ -115,6 +106,15 @@ if ($data !== null) {
 
     redirect(new moodle_url($PAGE->url, $currentparams));
 }
+
+
+// Get all attempts
+$attempts = publictestlink_attempt::get_all_attempts($quizid, $firstname_filter, $lastname_filter);
+
+// Calculate pagination
+$totalattempts = count($attempts);
+$offset = $page * $pagesize;
+$attempts_paged = array_slice($attempts, $offset, $pagesize);
 
 
 echo $OUTPUT->header();
