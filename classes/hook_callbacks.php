@@ -41,11 +41,11 @@ class hook_callbacks {
                 var selects = document.querySelectorAll("select.urlselect");
                 if (selects.length > 0) {
                     var publicGrading = document.createElement("option");
-                    publicGrading.value = "/local/publictestlink/pages/public_grading.php?id=$cmid";
+                    publicGrading.value = "/local/publictestlink/pages/report.php?mode=overview&id=$cmid";
                     publicGrading.text = "Public Link: Grading";
 
                     var publicResponses = document.createElement("option");
-                    publicResponses.value = "/local/publictestlink/pages/public_responses.php?id=$cmid";
+                    publicResponses.value = "/local/publictestlink/pages/report.php?mode=responses&id=$cmid";
                     publicResponses.text = "Public Link: Responses";
                     
                     selects.forEach(function(select) {
