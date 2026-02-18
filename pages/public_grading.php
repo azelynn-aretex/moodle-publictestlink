@@ -8,8 +8,10 @@
  */
 
 require_once('../../../config.php');
+require_once('../forms/results_display.php');
 require_once('../classes/quizcustom.php');
 require_once('../classes/attempt.php');
+require_once('../classes/filter_writer.php');
 
 use core\exception\moodle_exception;
 use core\output\actions\popup_action;
@@ -21,8 +23,15 @@ use mod_quiz\quiz_settings;
 
 // Page parameters
 $cmid = required_param('id', PARAM_INT);
+
 $action = optional_param('action', '', PARAM_ALPHA);
 $attemptids = optional_param_array('attemptid', [], PARAM_INT);
+
+$firstname_filter = optional_param('tifirst', null, PARAM_ALPHA);
+$lastname_filter  = optional_param('tilast', null, PARAM_ALPHA);
+
+$pagesize  = optional_param('pagesize', 20, PARAM_INT);
+$page  = optional_param('page', 0, PARAM_INT);
 
 $cm = get_coursemodule_from_id('quiz', $cmid);
 if (!$cm) {
@@ -42,49 +51,29 @@ if ($quizcustom === null || !$quizcustom->get_ispublic()) {
     redirect(new moodle_url('/mod/quiz/report.php', ['id' => $cmid, 'mode' => 'overview']));
 }
 
-// Prepare page context early so we can reuse the URL for redirects.
-$pageurl = new moodle_url('/local/publictestlink/pages/public_grading.php', ['id' => $cmid]);
+// Set up page context
 $PAGE->set_cm($cm, $course);
 $PAGE->set_context(context_module::instance($cmid));
 $PAGE->set_course($course);
-$PAGE->set_url($pageurl);
+$PAGE->set_url(new moodle_url('/local/publictestlink/pages/public_grading.php', [
+    'id' => $cmid,
+    'tifirst' => $firstname_filter,
+    'tilast' => $lastname_filter,
+    'pagesize' => $pagesize
+]));
 $PAGE->set_title('Public Quiz Grades');
 $PAGE->set_heading('Public Quiz Grades');
 $PAGE->set_pagelayout('report');
 
+$pageurl = new moodle_url(PLUGIN_URL . '/public_grading.php', ['id' => $cmid]);
+
 // Handle delete action
 if ($action === 'delete' && !empty($attemptids) && confirm_sesskey()) {
-    $deletedcount = 0;
-    $errors = 0;
+    $deletedcount = count($attemptids);
     
     foreach ($attemptids as $attemptid) {
-        $transaction = null;
-        try {
-            global $DB;
-
-            $attempt = publictestlink_attempt::from_id($attemptid);
-            $transaction = $DB->start_delegated_transaction();
-
-            question_engine::delete_questions_usage_by_activity($attempt->get_questionusageid());
-            $DB->delete_records('local_publictestlink_quizattempt', ['id' => $attempt->get_id()]);
-
-            $dbman = $DB->get_manager();
-            if ($dbman->table_exists('local_publictestlink_users')) {
-                $DB->delete_records('local_publictestlink_users', ['attemptid' => $attempt->get_id()]);
-            }
-
-            $transaction->allow_commit();
-            $deletedcount++;
-        } catch (dml_missing_record_exception $e) {
-            $errors++;
-            debugging("Attempt record not found for ID: $attemptid", DEBUG_DEVELOPER);
-        } catch (Throwable $e) {
-            if ($transaction instanceof moodle_transaction) {
-                $transaction->rollback($e);
-            }
-            $errors++;
-            debugging("Error deleting attempt $attemptid: " . $e->getMessage(), DEBUG_DEVELOPER);
-        }
+        $attempt = publictestlink_attempt::from_id($attemptid);
+        $attempt->delete();
     }
     
     // Set notifications
@@ -107,24 +96,27 @@ $firstname_filter = optional_param('firstname', '', PARAM_ALPHA);
 $lastname_filter = optional_param('lastname', '', PARAM_ALPHA);
 
 // Get all attempts
-$attempts = publictestlink_attempt::get_all_attempts($quizid);
+$attempts = publictestlink_attempt::get_all_attempts($quizid, $firstname_filter, $lastname_filter);
 
-// Filter attempts by first name and last name if filters are set
-if (!empty($firstname_filter) || !empty($lastname_filter)) {
-    $attempts = array_filter($attempts, function($attempt) use ($firstname_filter, $lastname_filter) {
-        $shadowuser = $attempt->get_shadow_user();
-        $firstname = strtolower($shadowuser->get_firstname());
-        $lastname = strtolower($shadowuser->get_lastname());
-        
-        if (!empty($firstname_filter) && strpos($firstname, strtolower($firstname_filter)) !== 0) {
-            return false;
-        }
-        if (!empty($lastname_filter) && strpos($lastname, strtolower($lastname_filter)) !== 0) {
-            return false;
-        }
-        return true;
-    });
+// Calculate pagination
+$totalattempts = count($attempts);
+$offset = $page * $pagesize;
+$attempts_paged = array_slice($attempts, $offset, $pagesize);
+
+
+// Create display options form
+$mform = new results_display_form($PAGE->url);
+$data = $mform->get_data();
+
+if ($data !== null) {
+    $pagesize = ($data->pagesize > 0) ? $data->pagesize : 20;
+
+    $currentparams = $PAGE->url->params();
+    $currentparams['pagesize'] = $pagesize;
+
+    redirect(new moodle_url($PAGE->url, $currentparams));
 }
+
 
 echo $OUTPUT->header();
 
@@ -149,26 +141,8 @@ $navselect->class = 'urlselect mb-3';
 
 echo $OUTPUT->render($navselect);
 
-// Display name filter buttons
-echo html_writer::start_tag('div', ['class' => 'mb-3']);
-echo html_writer::tag('p', html_writer::tag('strong', 'Filter by first name:'), ['class' => 'mb-2']);
-echo html_writer::start_tag('div', ['class' => 'd-flex flex-wrap gap-2 mb-3']);
-echo html_writer::link(new moodle_url($PAGE->url, ['firstname' => '', 'lastname' => $lastname_filter]), 'All', ['class' => 'btn btn-sm btn-outline-secondary' . ($firstname_filter === '' ? ' active' : '')]);
-foreach (range('A', 'Z') as $letter) {
-    $params = ['firstname' => $letter, 'lastname' => $lastname_filter];
-    echo html_writer::link(new moodle_url($PAGE->url, $params), $letter, ['class' => 'btn btn-sm btn-outline-secondary' . ($firstname_filter === $letter ? ' active' : '')]);
-}
-echo html_writer::end_tag('div');
-
-echo html_writer::tag('p', html_writer::tag('strong', 'Filter by last name:'), ['class' => 'mb-2']);
-echo html_writer::start_tag('div', ['class' => 'd-flex flex-wrap gap-2']);
-echo html_writer::link(new moodle_url($PAGE->url, ['firstname' => $firstname_filter, 'lastname' => '']), 'All', ['class' => 'btn btn-sm btn-outline-secondary' . ($lastname_filter === '' ? ' active' : '')]);
-foreach (range('A', 'Z') as $letter) {
-    $params = ['firstname' => $firstname_filter, 'lastname' => $letter];
-    echo html_writer::link(new moodle_url($PAGE->url, $params), $letter, ['class' => 'btn btn-sm btn-outline-secondary' . ($lastname_filter === $letter ? ' active' : '')]);
-}
-echo html_writer::end_tag('div');
-echo html_writer::end_tag('div');
+// Display pagination controls
+$mform->display();
 
 // Start form for batch operations
 echo html_writer::start_tag('form', [
@@ -177,6 +151,15 @@ echo html_writer::start_tag('form', [
     'id' => 'attempts-bulk-form'
 ]);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+
+
+// Display name filter buttons
+echo html_writer::start_tag('div', ['class' => 'mb-3']);
+
+echo filter_writer::render_name_filters('tifirst', 'First name');
+echo filter_writer::render_name_filters('tilast', 'Last name');
+
+echo html_writer::end_tag('div');
 
 // Start rendering table
 $table = new flexible_table('publictestlink-grading');
@@ -228,16 +211,18 @@ $table->define_headers([
 
 $table->define_baseurl($PAGE->url);
 $table->sortable(false);
-$table->pageable(false);
 $table->collapsible(false);
+
+$table->pageable(true);
+$table->pagesize($pagesize, $totalattempts);
 
 $table->setup();
 
 // Start writing rows
-foreach ($attempts as $attempt) {
-    $attemptlink = new moodle_url('/local/publictestlink/pages/reviewteacher.php', ['attemptid' => $attempt->get_id()]);
-    $shadowuser = $attempt->get_shadow_user();
-    $quba = $attempt->get_quba();
+foreach ($attempts_paged as $attempt) {
+	$attemptlink = new moodle_url(PLUGIN_URL . '/reviewteacher.php', ['attemptid' => $attempt->get_id()]);
+	$shadowuser = $attempt->get_shadow_user();
+	$quba = $attempt->get_quba();
     $row = [];
     
     $row['select'] = html_writer::checkbox('attemptid[]', $attempt->get_id(), false, '', ['class' => 'attempt-select']);

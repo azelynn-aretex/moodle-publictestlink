@@ -372,4 +372,15 @@ class publictestlink_attempt {
     public function get_percentage() {
         return $this->get_scaled_grade() / $this->get_max_grade();
     }
+
+    public function delete() {
+        global $DB;
+        /** @var moodle_database $DB */
+        $transaction = $DB->start_delegated_transaction();
+
+        question_engine::delete_questions_usage_by_activity($this->get_questionusageid());
+        $DB->delete_records('local_publictestlink_quizattempt', ['id' => $this->get_id()]);
+
+        $transaction->allow_commit();
+    }
 }
