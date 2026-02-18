@@ -8,6 +8,7 @@
  */
 
 require_once('../../../config.php');
+require_once('../forms/results_display.php');
 require_once('../classes/quizcustom.php');
 require_once('../classes/attempt.php');
 require_once('../classes/filter_writer.php');
@@ -24,6 +25,8 @@ use mod_quiz\quiz_settings;
 $cmid = required_param('id', PARAM_INT);
 $firstname_filter = optional_param('tifirst', null, PARAM_ALPHA);
 $lastname_filter  = optional_param('tilast', null, PARAM_ALPHA);
+$pagesize  = optional_param('pagesize', 20, PARAM_INT);
+$page  = optional_param('page', 0, PARAM_INT);
 
 $cm = get_coursemodule_from_id('quiz', $cmid);
 if (!$cm) {
@@ -49,14 +52,40 @@ $quiz = $quizobj->get_quiz();
 // Get all attempts
 $attempts = publictestlink_attempt::get_all_attempts($quizid, $firstname_filter, $lastname_filter);
 
+// Calculate pagination
+$totalattempts = count($attempts);
+$offset = $page * $pagesize;
+$attempts_paged = array_slice($attempts, $offset, $pagesize);
+
+
 // Set up page context
 $PAGE->set_cm($cm, $course);
 $PAGE->set_context(context_module::instance($cmid));
 $PAGE->set_course($course);
-$PAGE->set_url(new moodle_url('/local/publictestlink/pages/public_grading.php', ['id' => $cmid]));
+$PAGE->set_url(new moodle_url('/local/publictestlink/pages/public_grading.php', [
+    'id' => $cmid,
+    'tifirst' => $firstname_filter,
+    'tilast' => $lastname_filter,
+    'pagesize' => $pagesize
+]));
 $PAGE->set_title('Public Quiz Grades');
 $PAGE->set_heading('Public Quiz Grades');
 $PAGE->set_pagelayout('report');
+
+
+// Create display options form
+$mform = new results_display_form($PAGE->url);
+$data = $mform->get_data();
+
+if ($data !== null) {
+    $pagesize = ($data->pagesize > 0) ? $data->pagesize : 20;
+
+    $currentparams = $PAGE->url->params();
+    $currentparams['pagesize'] = $pagesize;
+
+    redirect(new moodle_url($PAGE->url, $currentparams));
+}
+
 
 echo $OUTPUT->header();
 
@@ -80,6 +109,11 @@ $navselect->set_label('Report navigation', ['class' => 'visually-hidden']);
 $navselect->class = 'urlselect mb-3';
 
 echo $OUTPUT->render($navselect);
+
+
+// Display pagination controls
+$mform->display();
+
 
 // Display name filter buttons
 echo html_writer::start_tag('div', ['class' => 'mb-3']);
@@ -137,13 +171,15 @@ $table->define_headers([
 
 $table->define_baseurl($PAGE->url);
 $table->sortable(false);
-$table->pageable(false);
 $table->collapsible(false);
+
+$table->pageable(true);
+$table->pagesize($pagesize, $totalattempts);
 
 $table->setup();
 
 // Start writing rows
-foreach ($attempts as $attempt) {
+foreach ($attempts_paged as $attempt) {
 	$attemptlink = new moodle_url(PLUGIN_URL . '/reviewteacher.php', ['attemptid' => $attempt->get_id()]);
 	$shadowuser = $attempt->get_shadow_user();
 	$quba = $attempt->get_quba();
