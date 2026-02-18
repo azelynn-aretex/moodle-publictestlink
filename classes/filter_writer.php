@@ -6,10 +6,7 @@ use core\url as moodle_url;
 class filter_writer {
     private static function render_pagination_button(string $display, moodle_url $url, bool $isactive) {
         return html_writer::tag('li',
-            html_writer::tag('a', $display, [
-                'class' => 'page-link' . ($isactive ? ' active' : ''),
-                'href' => $url
-            ]),
+            html_writer::link($url, $display, ['class' => 'page-link ' . ($isactive ? ' active' : '')]),
             ['class' => 'page-item']
         );
     }
@@ -18,7 +15,7 @@ class filter_writer {
 
         $current = optional_param($filtername, '', PARAM_ALPHA);
 
-        $params = $_GET;
+        $params = $PAGE->url->params();
 
         $html = '';
 
@@ -26,7 +23,7 @@ class filter_writer {
             $html .= html_writer::tag('span', $displayname, ['class' => 'initialbarlabel me-3']);
 
             $html .= html_writer::start_tag('ul', ['class' => 'pagination pagination-sm']);
-                unset($params[$filtername]);
+                $params[$filtername] = null;
                 $html .= self::render_pagination_button(
                     'All',
                     new moodle_url($PAGE->url, $params),
